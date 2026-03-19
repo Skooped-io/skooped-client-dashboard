@@ -26,6 +26,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/onboarding" element={<OnboardingWizard />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="analytics" element={<AnalyticsPage />} />
