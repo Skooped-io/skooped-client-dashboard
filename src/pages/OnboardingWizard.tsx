@@ -1,0 +1,512 @@
+import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check, ChevronRight, Upload, X, Sparkles, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+
+const TOTAL_STEPS = 6;
+
+const INDUSTRY_SERVICES: Record<string, string[]> = {
+  Roofing: ["Roof Repair", "Roof Replacement", "New Roof Installation", "Roof Inspection", "Emergency Roof Repair", "Storm Damage Repair", "Gutter Installation", "Metal Roofing", "Flat Roofing", "Commercial Roofing", "Shingle Roofing", "Tile Roofing"],
+  Fencing: ["Wood Fencing", "Vinyl Fencing", "Chain Link Fencing", "Aluminum Fencing", "Iron Fencing", "Privacy Fencing", "Pool Fencing", "Farm & Ranch Fencing", "Gate Installation", "Fence Repair", "Commercial Fencing", "Custom Fencing"],
+  HVAC: ["AC Repair", "AC Installation", "Heating Repair", "Furnace Installation", "Duct Cleaning", "Thermostat Installation", "Maintenance Plans", "Emergency Service", "Commercial HVAC", "Air Quality Testing"],
+  Plumbing: ["Drain Cleaning", "Leak Repair", "Water Heater Install", "Pipe Repair", "Sewer Line Repair", "Fixture Installation", "Emergency Plumbing", "Gas Line Repair", "Water Filtration", "Bathroom Remodel"],
+  Landscaping: ["Lawn Care", "Landscape Design", "Tree Trimming", "Hardscaping", "Irrigation Systems", "Mulching", "Sod Installation", "Seasonal Cleanup", "Outdoor Lighting", "Retaining Walls"],
+};
+
+const COLOR_PRESETS = [
+  { name: "Bold Red", value: "#DC2626" },
+  { name: "Navy Blue", value: "#1E3A5F" },
+  { name: "Forest Green", value: "#166534" },
+  { name: "Orange", value: "#EA580C" },
+  { name: "Dark Gray", value: "#374151" },
+  { name: "Royal Purple", value: "#7C3AED" },
+  { name: "Teal", value: "#0D9488" },
+];
+
+const FONT_OPTIONS = [
+  { id: "modern", label: "Modern", description: "Clean sans-serif", fonts: "Inter, DM Sans" },
+  { id: "classic", label: "Classic", description: "Slightly serif", fonts: "Playfair Display, Lato" },
+  { id: "friendly", label: "Friendly", description: "Rounded", fonts: "Nunito, Quicksand" },
+];
+
+interface OnboardingData {
+  template: string;
+  plan: string;
+  businessName: string;
+  ownerName: string;
+  phone: string;
+  email: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  serviceArea: string;
+  yearEstablished: string;
+  licenseNumber: string;
+  industry: string;
+  services: string[];
+  customService: string;
+  aboutText: string;
+  logo: string | null;
+  primaryColor: string;
+  secondaryColor: string;
+  fontStyle: string;
+  googleConnected: boolean;
+  googleEmail: string;
+}
+
+const defaultData: OnboardingData = {
+  template: "Starter",
+  plan: "Growth",
+  businessName: "",
+  ownerName: "",
+  phone: "",
+  email: "user@example.com",
+  street: "",
+  city: "",
+  state: "",
+  zip: "",
+  serviceArea: "",
+  yearEstablished: "",
+  licenseNumber: "",
+  industry: "Roofing",
+  services: [],
+  customService: "",
+  aboutText: "",
+  logo: null,
+  primaryColor: "#DC2626",
+  secondaryColor: "#F3F4F6",
+  fontStyle: "modern",
+  googleConnected: false,
+  googleEmail: "",
+};
+
+function ProgressBar({ step, total }: { step: number; total: number }) {
+  return (
+    <div className="flex gap-2 w-full max-w-md mx-auto">
+      {Array.from({ length: total }, (_, i) => (
+        <div key={i} className="flex-1 h-1.5 rounded-full overflow-hidden bg-border">
+          <motion.div
+            className="h-full bg-primary rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: i < step ? "100%" : "0%" }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MiniPreview({ data }: { data: OnboardingData }) {
+  return (
+    <div className="rounded-lg border border-border overflow-hidden shadow-lg bg-background-light" style={{ minHeight: 340 }}>
+      {/* Nav */}
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border" style={{ backgroundColor: data.primaryColor }}>
+        {data.logo ? (
+          <img src={data.logo} alt="Logo" className="h-5 w-5 object-contain rounded" />
+        ) : (
+          <div className="h-5 w-5 rounded bg-primary-foreground/30" />
+        )}
+        <span className="text-xs font-bold text-primary-foreground truncate">{data.businessName || "Your Business"}</span>
+        <div className="ml-auto flex gap-3">
+          {["Home", "About", "Services", "Contact"].map((p) => (
+            <span key={p} className="text-[10px] text-primary-foreground/70">{p}</span>
+          ))}
+        </div>
+      </div>
+      {/* Hero */}
+      <div className="px-6 py-8 text-center" style={{ background: `linear-gradient(135deg, ${data.primaryColor}15, ${data.secondaryColor})` }}>
+        <h3 className="text-lg font-bold mb-1" style={{ fontFamily: data.fontStyle === "classic" ? "serif" : data.fontStyle === "friendly" ? "Nunito, sans-serif" : "DM Sans, sans-serif" }}>
+          {data.businessName || "Your Business Name"}
+        </h3>
+        <p className="text-xs text-muted-foreground mb-3">Trusted. Reliable. Professional.</p>
+        <div className="inline-block px-4 py-1.5 rounded-lg text-xs font-semibold text-primary-foreground" style={{ backgroundColor: data.primaryColor }}>
+          Get a Free Estimate
+        </div>
+      </div>
+      {/* Services */}
+      <div className="px-6 py-4">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Our Services</p>
+        <div className="flex flex-wrap gap-1.5">
+          {(data.services.length > 0 ? data.services.slice(0, 4) : ["Service 1", "Service 2", "Service 3"]).map((s) => (
+            <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-card text-card-foreground">{s}</span>
+          ))}
+        </div>
+      </div>
+      {/* Footer */}
+      <div className="px-6 py-2 border-t border-border">
+        <p className="text-[9px] text-muted-foreground text-center">© {new Date().getFullYear()} {data.businessName || "Your Business"}</p>
+      </div>
+    </div>
+  );
+}
+
+const slideVariants = {
+  enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
+};
+
+export default function OnboardingWizard() {
+  const navigate = useNavigate();
+  const [step, setStep] = useState(0);
+  const [dir, setDir] = useState(1);
+  const [data, setData] = useState<OnboardingData>(defaultData);
+
+  const update = useCallback((partial: Partial<OnboardingData>) => {
+    setData((d) => ({ ...d, ...partial }));
+  }, []);
+
+  const next = () => { setDir(1); setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1)); };
+  const back = () => { setDir(-1); setStep((s) => Math.max(s - 1, 0)); };
+
+  const toggleService = (svc: string) => {
+    setData((d) => ({
+      ...d,
+      services: d.services.includes(svc) ? d.services.filter((s) => s !== svc) : [...d.services, svc],
+    }));
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => update({ logo: ev.target?.result as string });
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const finish = () => {
+    localStorage.setItem("skooped_onboarding", JSON.stringify(data));
+    navigate("/dashboard");
+  };
+
+  const inputClass = "bg-card border-border focus:border-primary focus:ring-primary/20 rounded-lg";
+
+  const steps = [
+    // Step 0: Welcome
+    <div className="text-center space-y-6">
+      <div className="text-5xl">🎉</div>
+      <h2 className="text-2xl md:text-3xl font-heading font-bold">Let's get your business online</h2>
+      <p className="text-muted-foreground max-w-md mx-auto">This takes about 3 minutes. We'll use this info to build your website and set up your marketing.</p>
+      <div className="inline-flex items-center gap-3 p-4 rounded-lg bg-card border border-border">
+        <div className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">{data.industry}</div>
+        <div>
+          <p className="text-sm font-semibold">{data.plan} Plan</p>
+          <p className="text-xs text-muted-foreground">{data.template} Template</p>
+        </div>
+      </div>
+      <div>
+        <Button size="lg" onClick={next} className="px-8">Let's Go <ChevronRight className="w-4 h-4 ml-1" /></Button>
+      </div>
+    </div>,
+
+    // Step 1: Business Details
+    <div className="space-y-5">
+      <div className="text-center mb-6">
+        <h2 className="text-xl md:text-2xl font-heading font-bold">Business Details</h2>
+        <p className="text-sm text-muted-foreground">Tell us about your business</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold">Business Name *</Label>
+          <Input className={inputClass} placeholder="e.g., Anderson Roofing Co." value={data.businessName} onChange={(e) => update({ businessName: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold">Your Name *</Label>
+          <Input className={inputClass} placeholder="Your full name" value={data.ownerName} onChange={(e) => update({ ownerName: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold">Phone Number *</Label>
+          <Input className={inputClass} placeholder="Main business number" value={data.phone} onChange={(e) => update({ phone: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold">Email *</Label>
+          <Input className={inputClass} placeholder="your@email.com" value={data.email} onChange={(e) => update({ email: e.target.value })} />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold">Business Address *</Label>
+        <Input className={inputClass} placeholder="Street address" value={data.street} onChange={(e) => update({ street: e.target.value })} />
+        <div className="grid grid-cols-3 gap-3">
+          <Input className={inputClass} placeholder="City" value={data.city} onChange={(e) => update({ city: e.target.value })} />
+          <Input className={inputClass} placeholder="State" value={data.state} onChange={(e) => update({ state: e.target.value })} />
+          <Input className={inputClass} placeholder="ZIP" value={data.zip} onChange={(e) => update({ zip: e.target.value })} />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold">Service Area</Label>
+          <Input className={inputClass} placeholder="e.g., Nashville — 30mi radius" value={data.serviceArea} onChange={(e) => update({ serviceArea: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold">Year Established</Label>
+          <Input className={inputClass} placeholder="e.g., 2015" value={data.yearEstablished} onChange={(e) => update({ yearEstablished: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold">License Number</Label>
+          <Input className={inputClass} placeholder="If applicable" value={data.licenseNumber} onChange={(e) => update({ licenseNumber: e.target.value })} />
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground text-center mt-2">Don't worry — you can update all of this later in Settings.</p>
+    </div>,
+
+    // Step 2: Services & Description
+    <div className="space-y-5">
+      <div className="text-center mb-4">
+        <h2 className="text-xl md:text-2xl font-heading font-bold">Services & Description</h2>
+        <p className="text-sm text-muted-foreground">What does your business do?</p>
+      </div>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xs font-semibold">Industry:</span>
+        <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">{data.industry}</span>
+      </div>
+      <div>
+        <Label className="text-xs font-semibold mb-2 block">Services Offered</Label>
+        <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto pr-1">
+          {(INDUSTRY_SERVICES[data.industry] || INDUSTRY_SERVICES.Roofing).map((svc) => (
+            <label key={svc} className="flex items-center gap-2 p-2 rounded-lg bg-card hover:bg-card-hover transition-colors cursor-pointer">
+              <Checkbox checked={data.services.includes(svc)} onCheckedChange={() => toggleService(svc)} />
+              <span className="text-sm">{svc}</span>
+            </label>
+          ))}
+        </div>
+        <div className="mt-2">
+          <Input className={inputClass} placeholder="Other service..." value={data.customService} onChange={(e) => update({ customService: e.target.value })} />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold">About Your Business</Label>
+        <Textarea
+          className={`${inputClass} min-h-[100px]`}
+          placeholder="Tell us what makes your business special. We'll use this on your website's About section."
+          value={data.aboutText}
+          onChange={(e) => update({ aboutText: e.target.value })}
+          maxLength={500}
+        />
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" /> Not sure what to write? Cooper will help craft this for you.</span>
+          <span>{data.aboutText.length}/500</span>
+        </div>
+      </div>
+    </div>,
+
+    // Step 3: Brand & Design
+    <div className="space-y-5">
+      <div className="text-center mb-4">
+        <h2 className="text-xl md:text-2xl font-heading font-bold">Brand & Design</h2>
+        <p className="text-sm text-muted-foreground">Make it yours — changes update the preview live</p>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: Controls */}
+        <div className="space-y-5">
+          {/* Logo */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold">Logo</Label>
+            <div className="relative border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
+              {data.logo ? (
+                <div className="flex items-center gap-3">
+                  <img src={data.logo} alt="Logo" className="h-12 w-12 object-contain rounded" />
+                  <span className="text-sm text-muted-foreground flex-1">Logo uploaded</span>
+                  <button onClick={() => update({ logo: null })} className="p-1 rounded hover:bg-card"><X className="w-4 h-4" /></button>
+                </div>
+              ) : (
+                <label className="cursor-pointer block">
+                  <Upload className="w-6 h-6 text-muted-foreground mx-auto mb-1" />
+                  <p className="text-xs text-muted-foreground">Drop your logo or click to browse</p>
+                  <p className="text-[10px] text-muted-light">PNG, JPG, SVG</p>
+                  <input type="file" accept=".png,.jpg,.jpeg,.svg" className="hidden" onChange={handleLogoUpload} />
+                </label>
+              )}
+            </div>
+            <p className="text-[10px] text-muted-foreground">Don't have a logo? We'll create a text logo from your business name.</p>
+          </div>
+
+          {/* Primary Color */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold">Primary Color</Label>
+            <div className="flex flex-wrap gap-2">
+              {COLOR_PRESETS.map((c) => (
+                <button
+                  key={c.value}
+                  onClick={() => update({ primaryColor: c.value })}
+                  className={`w-8 h-8 rounded-lg border-2 transition-all ${data.primaryColor === c.value ? "border-foreground scale-110" : "border-transparent"}`}
+                  style={{ backgroundColor: c.value }}
+                  title={c.name}
+                />
+              ))}
+              <label className="w-8 h-8 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary/50">
+                <span className="text-xs">+</span>
+                <input type="color" className="hidden" value={data.primaryColor} onChange={(e) => update({ primaryColor: e.target.value })} />
+              </label>
+            </div>
+            <p className="text-[10px] text-muted-foreground">Used for buttons, headings, and accents</p>
+          </div>
+
+          {/* Secondary Color */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold">Secondary Color</Label>
+            <div className="flex items-center gap-3">
+              <label className="w-8 h-8 rounded-lg border-2 border-border cursor-pointer" style={{ backgroundColor: data.secondaryColor }}>
+                <input type="color" className="hidden" value={data.secondaryColor} onChange={(e) => update({ secondaryColor: e.target.value })} />
+              </label>
+              <span className="text-xs text-muted-foreground">Used for backgrounds and highlights</span>
+            </div>
+          </div>
+
+          {/* Font */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold">Font Style</Label>
+            <div className="space-y-2">
+              {FONT_OPTIONS.map((f) => (
+                <label key={f.id} className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${data.fontStyle === f.id ? "bg-primary/10 border border-primary/30" : "bg-card hover:bg-card-hover border border-transparent"}`}>
+                  <input type="radio" name="font" className="hidden" checked={data.fontStyle === f.id} onChange={() => update({ fontStyle: f.id })} />
+                  <div>
+                    <p className="text-sm font-semibold" style={{ fontFamily: f.fonts }}>{f.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{f.description}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Preview */}
+        <div className="hidden lg:block">
+          <Label className="text-xs font-semibold mb-2 block">Live Preview</Label>
+          <MiniPreview data={data} />
+        </div>
+      </div>
+      {/* Mobile preview */}
+      <div className="lg:hidden">
+        <Label className="text-xs font-semibold mb-2 block">Preview</Label>
+        <MiniPreview data={data} />
+      </div>
+    </div>,
+
+    // Step 4: Connect Google
+    <div className="text-center space-y-6">
+      <h2 className="text-xl md:text-2xl font-heading font-bold">Connect your Google account</h2>
+      <p className="text-muted-foreground max-w-md mx-auto text-sm">
+        This lets us manage your Google Business Profile, track your search rankings, and run ads. You can skip this and do it later.
+      </p>
+      {data.googleConnected ? (
+        <div className="inline-flex items-center gap-2 p-4 rounded-lg bg-success/10 text-success">
+          <Check className="w-5 h-5" />
+          <span className="font-semibold text-sm">Connected as {data.googleEmail}</span>
+        </div>
+      ) : (
+        <Button
+          size="lg"
+          variant="outline"
+          className="px-6 gap-2"
+          onClick={() => update({ googleConnected: true, googleEmail: data.email })}
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          Connect Google Account
+        </Button>
+      )}
+      <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">We only request access to Google Search Console, Google Business Profile, and Google Analytics. We never access your Gmail, Drive, or personal data.</p>
+    </div>,
+
+    // Step 5: All Done
+    <div className="text-center space-y-6">
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 200, damping: 15 }}
+        className="w-20 h-20 rounded-full bg-success/15 flex items-center justify-center mx-auto"
+      >
+        <Check className="w-10 h-10 text-success" strokeWidth={3} />
+      </motion.div>
+      <h2 className="text-2xl md:text-3xl font-heading font-bold">You're all set! 🎉</h2>
+      <p className="text-muted-foreground max-w-md mx-auto">Your website is being built right now. Your AI team is already getting to work.</p>
+      <div className="max-w-xs mx-auto space-y-3 text-left">
+        {[
+          { done: true, text: "Account created" },
+          { done: false, text: "Website building...", loading: true },
+          { done: false, text: "SEO setup starting within 24 hours" },
+          { done: false, text: "First social posts scheduled this week" },
+        ].map((item, i) => (
+          <div key={i} className="flex items-center gap-3">
+            {item.done ? (
+              <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center"><Check className="w-3 h-3 text-success-foreground" /></div>
+            ) : (
+              <div className={`w-5 h-5 rounded-full border-2 ${item.loading ? "border-primary animate-pulse" : "border-border"}`} />
+            )}
+            <span className={`text-sm ${item.done ? "text-foreground" : "text-muted-foreground"}`}>{item.text}</span>
+          </div>
+        ))}
+      </div>
+      <Button size="lg" onClick={finish} className="px-8">
+        Go to Your Dashboard <ExternalLink className="w-4 h-4 ml-1" />
+      </Button>
+    </div>,
+  ];
+
+  const isFirstStep = step === 0;
+  const isLastStep = step === TOTAL_STEPS - 1;
+  const isGoogleStep = step === 4;
+
+  return (
+    <div className="min-h-screen bg-background-light flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-center py-6">
+        <div className="flex items-center gap-2">
+          <img src="/skooped-logo.svg" alt="Skooped" className="h-7" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          <span className="font-heading font-bold text-xl">Skooped</span>
+        </div>
+      </div>
+
+      {/* Progress */}
+      <div className="px-6 pb-6">
+        <ProgressBar step={step} total={TOTAL_STEPS} />
+      </div>
+
+      {/* Step Content */}
+      <div className="flex-1 flex items-start justify-center px-4 pb-12">
+        <div className="w-full max-w-2xl">
+          <AnimatePresence mode="wait" custom={dir}>
+            <motion.div
+              key={step}
+              custom={dir}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="bg-background rounded-xl border border-border p-6 md:p-8 shadow-sm"
+            >
+              {steps[step]}
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Navigation */}
+          {!isFirstStep && !isLastStep && (
+            <div className="flex items-center justify-between mt-6">
+              <button onClick={back} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                ← Back
+              </button>
+              <div className="flex gap-3">
+                {isGoogleStep && !data.googleConnected && (
+                  <button onClick={next} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    Skip for now
+                  </button>
+                )}
+                <Button onClick={next}>
+                  {isGoogleStep ? (data.googleConnected ? "Continue" : "Next") : "Next"} <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
