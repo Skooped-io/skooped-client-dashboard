@@ -17,7 +17,6 @@ const recentChanges = [
 const pages = [
   { name: "Home", path: "/", status: "Published", score: 96 },
   { name: "Services", path: "/services", status: "Published", score: 92 },
-  { name: "Vinyl Fencing", path: "/services/vinyl-fencing", status: "Published", score: 94 },
   { name: "Gallery", path: "/gallery", status: "Published", score: 88 },
   { name: "About", path: "/about", status: "Published", score: 91 },
   { name: "Contact", path: "/contact", status: "Published", score: 95 },
