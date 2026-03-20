@@ -13,7 +13,7 @@ const pageNames: Record<string, string> = {
   "/dashboard/content": "Content Calendar",
   "/dashboard/website": "Website",
   "/dashboard/team": "Your Team",
-  "/dashboard/ask": "Ask Cooper",
+  "/dashboard/ask": "Contact Cooper",
   "/dashboard/settings": "Settings",
 };
 
