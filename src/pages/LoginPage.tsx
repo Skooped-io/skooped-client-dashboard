@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { Mail } from "lucide-react";
 
 interface LoginPageProps {
   defaultTab?: "signin" | "signup";
@@ -24,6 +25,8 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
   const [signUpConfirm, setSignUpConfirm] = useState("");
   const [signUpError, setSignUpError] = useState("");
   const [signUpLoading, setSignUpLoading] = useState(false);
+  const [signUpSuccess, setSignUpSuccess] = useState(false);
+  const [confirmedEmail, setConfirmedEmail] = useState("");
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +54,8 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
     if (error) {
       setSignUpError(error.message);
     } else {
-      navigate("/onboarding");
+      setConfirmedEmail(signUpEmail);
+      setSignUpSuccess(true);
     }
   };
 
@@ -61,6 +65,8 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
       setSignInError(error.message);
     }
   };
+
+  const isEmailNotConfirmed = signInError.toLowerCase().includes("email not confirmed");
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -75,30 +81,59 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
           </div>
 
           {/* Tabs */}
-          <div className="flex rounded-lg bg-muted p-1 mb-6">
-            <button
-              onClick={() => setActiveTab("signin")}
-              className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
-                activeTab === "signin"
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => setActiveTab("signup")}
-              className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
-                activeTab === "signup"
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Create Account
-            </button>
-          </div>
+          {!signUpSuccess && (
+            <div className="flex rounded-lg bg-muted p-1 mb-6">
+              <button
+                onClick={() => setActiveTab("signin")}
+                className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
+                  activeTab === "signin"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => setActiveTab("signup")}
+                className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
+                  activeTab === "signup"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Create Account
+              </button>
+            </div>
+          )}
 
-          {activeTab === "signin" ? (
+          {signUpSuccess ? (
+            <div className="text-center py-4">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Mail className="w-7 h-7 text-primary" />
+              </div>
+              <h2 className="text-xl font-heading font-bold mb-2">Check your email!</h2>
+              <p className="text-sm text-muted-foreground mb-1">
+                We sent a confirmation link to{" "}
+                <span className="font-semibold text-foreground">{confirmedEmail}</span>.
+              </p>
+              <p className="text-sm text-muted-foreground mb-6">
+                Click the link in your email to activate your account.
+              </p>
+              <p className="text-xs text-muted-foreground mb-6">
+                Didn't get it? Check your spam folder or try again.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSignUpSuccess(false);
+                  setActiveTab("signin");
+                }}
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Back to Sign In
+              </button>
+            </div>
+          ) : activeTab === "signin" ? (
             <form onSubmit={handleSignIn}>
               <h1 className="text-xl font-heading font-bold text-center mb-1">Welcome back</h1>
               <p className="text-sm text-muted-foreground text-center mb-6">Sign in to your client portal</p>
@@ -127,9 +162,26 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
                   />
                 </div>
 
-                {signInError && (
+                {signInError && isEmailNotConfirmed ? (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0 mt-0.5">
+                        <Mail className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-1">Email not confirmed yet</p>
+                        <p className="text-xs text-amber-700 dark:text-amber-400">
+                          Please check your inbox for the confirmation link we sent to your email. Click the link to activate your account, then come back and sign in.
+                        </p>
+                        <p className="text-xs text-amber-600 dark:text-amber-500 mt-1.5">
+                          Didn't receive it? Check your spam folder.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : signInError ? (
                   <p className="text-xs text-destructive">{signInError}</p>
-                )}
+                ) : null}
 
                 <button
                   type="submit"
