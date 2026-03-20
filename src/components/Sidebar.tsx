@@ -68,7 +68,7 @@ export function Sidebar({ collapsed, onToggle, mobile, onNavigate }: SidebarProp
         {(!collapsed || mobile) && (
           <div className="flex items-center gap-3 px-2 py-2">
             <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center shrink-0">
-              <span className="text-accent-foreground font-heading font-bold text-xs">TF</span>
+              <span className="text-accent-foreground font-heading font-bold text-xs">MB</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate">Tennessee Fencing</p>
