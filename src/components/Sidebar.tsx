@@ -11,7 +11,7 @@ const navItems = [
   { to: "/dashboard/content", icon: Calendar, label: "Content Calendar" },
   { to: "/dashboard/website", icon: Globe, label: "Website" },
   { to: "/dashboard/team", icon: Users, label: "Your Team" },
-  { to: "/dashboard/ask", icon: MessageSquare, label: "Ask Cooper" },
+  { to: "/dashboard/ask", icon: MessageSquare, label: "Contact Cooper" },
   { to: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 
