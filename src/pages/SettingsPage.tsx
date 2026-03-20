@@ -46,8 +46,8 @@ export default function SettingsPage() {
             <div className="bg-card rounded-lg p-5">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="font-heading font-bold">Growth Plan</h3>
-                  <p className="text-sm text-muted-foreground">$497/month · Next billing: April 1, 2024</p>
+                  <h3 className="font-heading font-bold">Starter Plan</h3>
+                  <p className="text-sm text-muted-foreground">$49/month · Next billing: April 1, 2024</p>
                   <p className="text-sm text-muted-foreground mt-1">Visa ending in 4242</p>
                 </div>
                 <span className="px-3 py-1 text-xs font-semibold rounded-full bg-secondary text-secondary-foreground">Active</span>
