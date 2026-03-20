@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LoginPageProps {
   defaultTab?: "signin" | "signup";
@@ -7,6 +8,59 @@ interface LoginPageProps {
 
 export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
   const [activeTab, setActiveTab] = useState<"signin" | "signup">(defaultTab);
+  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const navigate = useNavigate();
+
+  // Sign in state
+  const [signInEmail, setSignInEmail] = useState("");
+  const [signInPassword, setSignInPassword] = useState("");
+  const [signInError, setSignInError] = useState("");
+  const [signInLoading, setSignInLoading] = useState(false);
+
+  // Sign up state
+  const [signUpName, setSignUpName] = useState("");
+  const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPassword, setSignUpPassword] = useState("");
+  const [signUpConfirm, setSignUpConfirm] = useState("");
+  const [signUpError, setSignUpError] = useState("");
+  const [signUpLoading, setSignUpLoading] = useState(false);
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSignInError("");
+    setSignInLoading(true);
+    const { error } = await signIn(signInEmail, signInPassword);
+    setSignInLoading(false);
+    if (error) {
+      setSignInError(error.message);
+    } else {
+      navigate("/dashboard");
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSignUpError("");
+    if (signUpPassword !== signUpConfirm) {
+      setSignUpError("Passwords do not match");
+      return;
+    }
+    setSignUpLoading(true);
+    const { error } = await signUp(signUpEmail, signUpPassword, signUpName);
+    setSignUpLoading(false);
+    if (error) {
+      setSignUpError(error.message);
+    } else {
+      navigate("/onboarding");
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const { error } = await signInWithGoogle();
+    if (error) {
+      setSignInError(error.message);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -45,7 +99,7 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
           </div>
 
           {activeTab === "signin" ? (
-            <>
+            <form onSubmit={handleSignIn}>
               <h1 className="text-xl font-heading font-bold text-center mb-1">Welcome back</h1>
               <p className="text-sm text-muted-foreground text-center mb-6">Sign in to your client portal</p>
 
@@ -55,6 +109,9 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
                   <input
                     type="email"
                     placeholder="you@business.com"
+                    value={signInEmail}
+                    onChange={(e) => setSignInEmail(e.target.value)}
+                    required
                     className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
@@ -63,18 +120,26 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
                   <input
                     type="password"
                     placeholder="••••••••"
+                    value={signInPassword}
+                    onChange={(e) => setSignInPassword(e.target.value)}
+                    required
                     className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
 
-                <Link
-                  to="/dashboard"
-                  className="w-full flex items-center justify-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
-                >
-                  Sign In
-                </Link>
+                {signInError && (
+                  <p className="text-xs text-destructive">{signInError}</p>
+                )}
 
-                <button className="w-full text-xs text-primary text-center hover:underline">
+                <button
+                  type="submit"
+                  disabled={signInLoading}
+                  className="w-full flex items-center justify-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
+                >
+                  {signInLoading ? "Signing in…" : "Sign In"}
+                </button>
+
+                <button type="button" className="w-full text-xs text-primary text-center hover:underline">
                   Forgot password?
                 </button>
 
@@ -83,20 +148,24 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
                   <div className="relative flex justify-center"><span className="bg-card px-3 text-xs text-muted-foreground">or</span></div>
                 </div>
 
-                <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-card-hover transition-colors">
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-card-hover transition-colors"
+                >
                   Sign in with Google
                 </button>
               </div>
 
               <p className="text-xs text-muted-foreground text-center mt-6">
                 Don't have an account?{" "}
-                <button onClick={() => setActiveTab("signup")} className="text-primary hover:underline">
+                <button type="button" onClick={() => setActiveTab("signup")} className="text-primary hover:underline">
                   Create one
                 </button>
               </p>
-            </>
+            </form>
           ) : (
-            <>
+            <form onSubmit={handleSignUp}>
               <h1 className="text-xl font-heading font-bold text-center mb-1">Get started</h1>
               <p className="text-sm text-muted-foreground text-center mb-6">Create your Skooped account</p>
 
@@ -106,6 +175,9 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
                   <input
                     type="text"
                     placeholder="Jane Rodriguez"
+                    value={signUpName}
+                    onChange={(e) => setSignUpName(e.target.value)}
+                    required
                     className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
@@ -114,6 +186,9 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
                   <input
                     type="email"
                     placeholder="you@business.com"
+                    value={signUpEmail}
+                    onChange={(e) => setSignUpEmail(e.target.value)}
+                    required
                     className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
@@ -122,6 +197,9 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
                   <input
                     type="password"
                     placeholder="••••••••"
+                    value={signUpPassword}
+                    onChange={(e) => setSignUpPassword(e.target.value)}
+                    required
                     className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
@@ -130,34 +208,46 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
                   <input
                     type="password"
                     placeholder="••••••••"
+                    value={signUpConfirm}
+                    onChange={(e) => setSignUpConfirm(e.target.value)}
+                    required
                     className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
 
-                <Link
-                  to="/onboarding"
-                  className="w-full flex items-center justify-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+                {signUpError && (
+                  <p className="text-xs text-destructive">{signUpError}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={signUpLoading}
+                  className="w-full flex items-center justify-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
                 >
-                  Create Account
-                </Link>
+                  {signUpLoading ? "Creating account…" : "Create Account"}
+                </button>
 
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
                   <div className="relative flex justify-center"><span className="bg-card px-3 text-xs text-muted-foreground">or</span></div>
                 </div>
 
-                <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-card-hover transition-colors">
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-card-hover transition-colors"
+                >
                   Sign up with Google
                 </button>
               </div>
 
               <p className="text-xs text-muted-foreground text-center mt-6">
                 Already have an account?{" "}
-                <button onClick={() => setActiveTab("signin")} className="text-primary hover:underline">
+                <button type="button" onClick={() => setActiveTab("signin")} className="text-primary hover:underline">
                   Sign in
                 </button>
               </p>
-            </>
+            </form>
           )}
         </div>
       </div>

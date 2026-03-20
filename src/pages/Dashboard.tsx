@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { Globe, Search, Phone, Star, ArrowRight } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { TrafficChart } from "@/components/TrafficChart";
 import { AgentActivityFeed } from "@/components/AgentActivityFeed";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const stats = [
   { icon: Globe, label: "Website Visits", value: 1247, trend: "12%", trendUp: true, accentClass: "bg-primary/15 text-primary" },
@@ -20,15 +20,17 @@ const quickActions = [
 ];
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const businessName = user?.user_metadata?.business_name || "Welcome";
 
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl">
       {/* Welcome */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-heading font-bold">{greeting}, Your Business</h1>
+        <h1 className="text-2xl md:text-3xl font-heading font-bold">{greeting}, {businessName}</h1>
         <p className="text-muted-foreground mt-1">{dateStr} — Here's what your team has been up to</p>
       </div>
 

@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { Check, ChevronRight, Upload, X, Sparkles, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -155,6 +157,7 @@ const slideVariants = {
 
 export default function OnboardingWizard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [data, setData] = useState<OnboardingData>(defaultData);
@@ -182,8 +185,18 @@ export default function OnboardingWizard() {
     }
   };
 
-  const finish = () => {
+  const finish = async () => {
     localStorage.setItem("skooped_onboarding", JSON.stringify(data));
+    if (user) {
+      await supabase.auth.updateUser({
+        data: {
+          onboarding_complete: true,
+          business_name: data.businessName,
+          industry: data.industry,
+          services: data.services,
+        },
+      });
+    }
     navigate("/dashboard");
   };
 

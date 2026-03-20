@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import {
   DropdownMenu,
@@ -6,6 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
 
 const pageNames: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -20,6 +21,20 @@ const pageNames: Record<string, string> = {
 export function TopBar() {
   const { pathname } = useLocation();
   const pageName = pageNames[pathname] || "Dashboard";
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const getInitials = () => {
+    const name = user?.user_metadata?.full_name || user?.email || "";
+    const parts = name.split(/[\s@]+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase() || "MB";
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login");
+  };
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between px-6 py-3 border-b border-border bg-background-light/80 backdrop-blur-sm">
@@ -38,13 +53,13 @@ export function TopBar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-              <span className="text-accent-foreground font-heading font-bold text-xs">MB</span>
+              <span className="text-accent-foreground font-heading font-bold text-xs">{getInitials()}</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Billing</DropdownMenuItem>
-            <DropdownMenuItem>Sign Out</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/dashboard/settings?tab=billing")}>Billing</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut}>Sign Out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

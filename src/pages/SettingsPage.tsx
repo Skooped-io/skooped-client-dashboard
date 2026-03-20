@@ -1,8 +1,28 @@
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SettingsPage() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login");
+  };
+
+  const meta = user?.user_metadata ?? {};
+
+  const profileFields = [
+    { label: "Business Name", value: meta.business_name ?? "" },
+    { label: "Contact Name", value: meta.full_name ?? "" },
+    { label: "Email", value: user?.email ?? "" },
+    { label: "Phone", value: meta.phone ?? "" },
+    { label: "Website URL", value: meta.website ?? "" },
+    { label: "Industry", value: meta.industry ?? "" },
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl">
       <div>
@@ -19,14 +39,7 @@ export default function SettingsPage() {
 
         <TabsContent value="profile">
           <div className="bg-card rounded-lg p-5 space-y-4">
-            {[
-              { label: "Business Name", value: "" },
-              { label: "Contact Name", value: "" },
-              { label: "Email", value: "" },
-              { label: "Phone", value: "" },
-              { label: "Website URL", value: "" },
-              { label: "Industry", value: "" },
-            ].map((field) => (
+            {profileFields.map((field) => (
               <div key={field.label}>
                 <label className="text-sm font-medium text-muted-foreground block mb-1.5">{field.label}</label>
                 <input
@@ -35,9 +48,17 @@ export default function SettingsPage() {
                 />
               </div>
             ))}
-            <button className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
-              Save Changes
-            </button>
+            <div className="flex items-center justify-between pt-2">
+              <button className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+                Save Changes
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-card-hover transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         </TabsContent>
 
