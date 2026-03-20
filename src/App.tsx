@@ -15,6 +15,7 @@ import AskCooper from "@/pages/AskCooper";
 import SettingsPage from "@/pages/SettingsPage";
 import LoginPage from "@/pages/LoginPage";
 import OnboardingWizard from "@/pages/OnboardingWizard";
+import PricingPage from "@/pages/PricingPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<LoginPage defaultTab="signup" />} />
+            <Route path="/pricing" element={<PricingPage />} />
             <Route
               path="/onboarding"
               element={

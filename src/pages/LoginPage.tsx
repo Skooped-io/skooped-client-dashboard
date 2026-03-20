@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface LoginPageProps {
@@ -163,6 +163,11 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
                   Create one
                 </button>
               </p>
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                <Link to="/pricing" className="text-primary hover:underline">
+                  View our plans
+                </Link>
+              </p>
             </form>
           ) : (
             <form onSubmit={handleSignUp}>
@@ -246,6 +251,11 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
                 <button type="button" onClick={() => setActiveTab("signin")} className="text-primary hover:underline">
                   Sign in
                 </button>
+              </p>
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                <Link to="/pricing" className="text-primary hover:underline">
+                  View our plans
+                </Link>
               </p>
             </form>
           )}

@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 const INDUSTRY_SERVICES: Record<string, string[]> = {
   Roofing: ["Roof Repair", "Roof Replacement", "New Roof Installation", "Roof Inspection", "Emergency Roof Repair", "Storm Damage Repair", "Gutter Installation", "Metal Roofing", "Flat Roofing", "Commercial Roofing", "Shingle Roofing", "Tile Roofing"],
@@ -194,6 +194,7 @@ export default function OnboardingWizard() {
           business_name: data.businessName,
           industry: data.industry,
           services: data.services,
+          plan: data.plan,
         },
       });
     }
@@ -220,7 +221,67 @@ export default function OnboardingWizard() {
       </div>
     </div>,
 
-    // Step 1: Business Details
+    // Step 1: Plan Selection
+    <div className="space-y-5">
+      <div className="text-center mb-4">
+        <h2 className="text-xl md:text-2xl font-heading font-bold">Choose your plan</h2>
+        <p className="text-sm text-muted-foreground">You can change this anytime</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[
+          {
+            id: "Starter",
+            price: "$49/mo",
+            features: ["Custom website", "Basic SEO", "Google Business Profile", "Monthly report"],
+            popular: false,
+          },
+          {
+            id: "Growth",
+            price: "$99/mo",
+            features: ["Everything in Starter", "Social media mgmt", "Google Ads", "Weekly reports", "Priority support"],
+            popular: true,
+          },
+          {
+            id: "Scale",
+            price: "$149/mo",
+            features: ["Everything in Growth", "Advanced SEO", "Content creation", "Call tracking", "Dedicated account manager"],
+            popular: false,
+          },
+        ].map((plan) => (
+          <button
+            key={plan.id}
+            type="button"
+            onClick={() => update({ plan: plan.id })}
+            className={`text-left p-4 rounded-lg border-2 transition-all ${
+              data.plan === plan.id
+                ? "border-primary bg-primary/5"
+                : "border-border bg-card hover:border-primary/50"
+            }`}
+          >
+            {plan.popular && (
+              <div className="mb-2">
+                <span className="inline-block px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold">
+                  POPULAR
+                </span>
+              </div>
+            )}
+            <div className="font-heading font-bold text-base">{plan.id}</div>
+            <div className="text-xl font-bold mt-0.5 mb-2">{plan.price}</div>
+            <ul className="space-y-1">
+              {plan.features.map((f) => (
+                <li key={f} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Check className="w-3 h-3 text-primary flex-shrink-0" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground text-center">No charge until your website is approved.</p>
+    </div>,
+
+    // Step 2: Business Details
     <div className="space-y-5">
       <div className="text-center mb-6">
         <h2 className="text-xl md:text-2xl font-heading font-bold">Business Details</h2>
@@ -440,6 +501,12 @@ export default function OnboardingWizard() {
       </motion.div>
       <h2 className="text-2xl md:text-3xl font-heading font-bold">You're all set! 🎉</h2>
       <p className="text-muted-foreground max-w-md mx-auto">Your website is being built right now. Your AI team is already getting to work.</p>
+      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold">
+        {data.plan} Plan selected
+      </div>
+      <p className="text-xs text-muted-foreground max-w-sm mx-auto -mt-2">
+        Your subscription will begin after your website is built. No charge until you approve.
+      </p>
       <div className="max-w-xs mx-auto space-y-3 text-left">
         {[
           { done: true, text: "Account created" },
@@ -465,7 +532,7 @@ export default function OnboardingWizard() {
 
   const isFirstStep = step === 0;
   const isLastStep = step === TOTAL_STEPS - 1;
-  const isGoogleStep = step === 4;
+  const isGoogleStep = step === 5;
 
   return (
     <div className="min-h-screen bg-background-light flex flex-col">
