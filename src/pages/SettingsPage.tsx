@@ -20,12 +20,12 @@ export default function SettingsPage() {
         <TabsContent value="profile">
           <div className="bg-card rounded-lg p-5 space-y-4">
             {[
-              { label: "Business Name", value: "Tennessee Fencing Co." },
-              { label: "Contact Name", value: "John Mitchell" },
-              { label: "Email", value: "john@tennesseefencing.com" },
-              { label: "Phone", value: "(615) 555-0123" },
-              { label: "Website URL", value: "tennesseefencing.com" },
-              { label: "Industry", value: "Fencing Contractor" },
+              { label: "Business Name", value: "" },
+              { label: "Contact Name", value: "" },
+              { label: "Email", value: "" },
+              { label: "Phone", value: "" },
+              { label: "Website URL", value: "" },
+              { label: "Industry", value: "" },
             ].map((field) => (
               <div key={field.label}>
                 <label className="text-sm font-medium text-muted-foreground block mb-1.5">{field.label}</label>
@@ -46,8 +46,8 @@ export default function SettingsPage() {
             <div className="bg-card rounded-lg p-5">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="font-heading font-bold">Growth Plan</h3>
-                  <p className="text-sm text-muted-foreground">$497/month · Next billing: April 1, 2024</p>
+                  <h3 className="font-heading font-bold">Starter Plan</h3>
+                  <p className="text-sm text-muted-foreground">$49/month · Next billing: April 1, 2024</p>
                   <p className="text-sm text-muted-foreground mt-1">Visa ending in 4242</p>
                 </div>
                 <span className="px-3 py-1 text-xs font-semibold rounded-full bg-secondary text-secondary-foreground">Active</span>
@@ -66,9 +66,9 @@ export default function SettingsPage() {
               <h3 className="font-heading font-bold mb-3">Invoice History</h3>
               <div className="space-y-2">
                 {[
-                  { date: "Mar 1, 2024", amount: "$497.00" },
-                  { date: "Feb 1, 2024", amount: "$497.00" },
-                  { date: "Jan 1, 2024", amount: "$497.00" },
+                  { date: "Mar 1, 2024", amount: "$49.00" },
+                  { date: "Feb 1, 2024", amount: "$49.00" },
+                  { date: "Jan 1, 2024", amount: "$49.00" },
                 ].map((inv) => (
                   <div key={inv.date} className="flex items-center justify-between p-3 rounded-lg bg-background">
                     <div className="flex items-center gap-3">

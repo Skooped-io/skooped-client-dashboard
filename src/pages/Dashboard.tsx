@@ -28,7 +28,7 @@ export default function Dashboard() {
     <div className="space-y-6 animate-fade-in max-w-6xl">
       {/* Welcome */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-heading font-bold">{greeting}, Tennessee Fencing</h1>
+        <h1 className="text-2xl md:text-3xl font-heading font-bold">{greeting}, Your Business</h1>
         <p className="text-muted-foreground mt-1">{dateStr} — Here's what your team has been up to</p>
       </div>
 
@@ -75,9 +75,9 @@ export default function Dashboard() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { platform: "Instagram", date: "Tomorrow, 10:00 AM", caption: "Spring is here! Time to refresh your fence with our seasonal maintenance tips 🌱" },
-            { platform: "Facebook", date: "Wed, 2:00 PM", caption: "Check out our latest vinyl fence installation in Franklin — clean lines, zero maintenance." },
-            { platform: "Instagram", date: "Fri, 11:00 AM", caption: "Before & after: This cedar fence transformation will blow your mind 🤯" },
+            { platform: "Instagram", date: "Tomorrow, 10:00 AM", caption: "Spring is here! Fresh season, fresh start for your business 🌱" },
+            { platform: "Facebook", date: "Wed, 2:00 PM", caption: "Check out our latest project — clean work, happy client." },
+            { platform: "Instagram", date: "Fri, 11:00 AM", caption: "Before & after: This transformation will blow your mind 🤯" },
           ].map((post, i) => (
             <div key={i} className="p-4 rounded-lg bg-background">
               <div className="flex items-center gap-2 mb-2">

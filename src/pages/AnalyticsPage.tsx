@@ -15,7 +15,7 @@ const trafficSources = [
 
 const topPages = [
   { page: "/", views: 487, avgTime: "2:34", bounce: "32%" },
-  { page: "/services/vinyl-fencing", views: 234, avgTime: "3:12", bounce: "28%" },
+  { page: "/services", views: 234, avgTime: "3:12", bounce: "28%" },
   { page: "/gallery", views: 189, avgTime: "4:01", bounce: "22%" },
   { page: "/contact", views: 156, avgTime: "1:45", bounce: "41%" },
   { page: "/about", views: 98, avgTime: "2:10", bounce: "35%" },
@@ -29,11 +29,11 @@ const conversionsData = Array.from({ length: 8 }, (_, i) => ({
 }));
 
 const keywords = [
-  { keyword: "fencing contractor Franklin TN", current: 3, previous: 6, volume: 720 },
-  { keyword: "vinyl fence installation Nashville", current: 7, previous: 9, volume: 1200 },
-  { keyword: "cedar fence repair Tennessee", current: 5, previous: 5, volume: 480 },
-  { keyword: "fence company near me", current: 12, previous: 18, volume: 3600 },
-  { keyword: "privacy fence Franklin", current: 2, previous: 4, volume: 320 },
+  { keyword: "best [service] near me", current: 3, previous: 6, volume: 720 },
+  { keyword: "[service] contractor [city]", current: 7, previous: 9, volume: 1200 },
+  { keyword: "[service] repair near me", current: 5, previous: 5, volume: 480 },
+  { keyword: "[service] company near me", current: 12, previous: 18, volume: 3600 },
+  { keyword: "affordable [service] [city]", current: 2, previous: 4, volume: 320 },
 ];
 
 export default function AnalyticsPage() {

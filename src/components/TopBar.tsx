@@ -13,7 +13,7 @@ const pageNames: Record<string, string> = {
   "/dashboard/content": "Content Calendar",
   "/dashboard/website": "Website",
   "/dashboard/team": "Your Team",
-  "/dashboard/ask": "Ask Cooper",
+  "/dashboard/ask": "Contact Cooper",
   "/dashboard/settings": "Settings",
 };
 
@@ -38,7 +38,7 @@ export function TopBar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-              <span className="text-accent-foreground font-heading font-bold text-xs">TF</span>
+              <span className="text-accent-foreground font-heading font-bold text-xs">MB</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

@@ -1,12 +1,12 @@
 import { Calendar, CheckCircle } from "lucide-react";
 
 const posts = [
-  { platform: "Instagram", date: "Mon, Mar 20", time: "10:00 AM", caption: "Spring is here! Time to refresh your fence with our seasonal maintenance tips 🌱", status: "Scheduled" },
-  { platform: "Facebook", date: "Wed, Mar 22", time: "2:00 PM", caption: "Check out our latest vinyl fence installation in Franklin — clean lines, zero maintenance.", status: "Scheduled" },
-  { platform: "Instagram", date: "Fri, Mar 24", time: "11:00 AM", caption: "Before & after: This cedar fence transformation will blow your mind 🤯", status: "Draft" },
-  { platform: "Instagram", date: "Mon, Mar 27", time: "10:00 AM", caption: "Did you know? A well-maintained fence can increase your property value by up to 10% 🏡", status: "Scheduled" },
-  { platform: "Facebook", date: "Tue, Mar 28", time: "3:00 PM", caption: "Customer spotlight: The Johnson family's beautiful new privacy fence in Brentwood", status: "Draft" },
-  { platform: "Instagram", date: "Thu, Mar 30", time: "12:00 PM", caption: "Pro tip: How to choose between wood and vinyl fencing for your property", status: "Scheduled" },
+  { platform: "Instagram", date: "Mon, Mar 20", time: "10:00 AM", caption: "Spring is here! Fresh season, fresh start for your business 🌱", status: "Scheduled" },
+  { platform: "Facebook", date: "Wed, Mar 22", time: "2:00 PM", caption: "Check out our latest project — clean work, happy client.", status: "Scheduled" },
+  { platform: "Instagram", date: "Fri, Mar 24", time: "11:00 AM", caption: "Before & after: This transformation will blow your mind 🤯", status: "Draft" },
+  { platform: "Instagram", date: "Mon, Mar 27", time: "10:00 AM", caption: "Did you know? Regular maintenance can increase your property value by up to 10% 🏡", status: "Scheduled" },
+  { platform: "Facebook", date: "Tue, Mar 28", time: "3:00 PM", caption: "Customer spotlight: Another happy client, another great result ⭐", status: "Draft" },
+  { platform: "Instagram", date: "Thu, Mar 30", time: "12:00 PM", caption: "Pro tip: How to choose the right service provider for your next project", status: "Scheduled" },
 ];
 
 export default function ContentCalendar() {
