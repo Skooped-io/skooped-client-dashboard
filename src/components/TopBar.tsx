@@ -38,7 +38,7 @@ export function TopBar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-              <span className="text-accent-foreground font-heading font-bold text-xs">TF</span>
+              <span className="text-accent-foreground font-heading font-bold text-xs">MB</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

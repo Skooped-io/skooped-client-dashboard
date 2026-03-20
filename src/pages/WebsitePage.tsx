@@ -71,7 +71,7 @@ export default function WebsitePage() {
                 <span className="w-2 h-2 rounded-full bg-success" />
                 <span className="text-sm font-semibold text-success">Live</span>
               </div>
-              <p className="text-sm text-muted-foreground mt-0.5">tennesseefencing.com</p>
+              <p className="text-sm text-muted-foreground mt-0.5">yourbusiness.com</p>
               <div className="flex items-center gap-3 mt-1 text-xs text-muted-light">
                 <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> SSL Active</span>
                 <span>Last updated: March 18</span>

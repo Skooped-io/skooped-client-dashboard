@@ -66,9 +66,9 @@ export default function SettingsPage() {
               <h3 className="font-heading font-bold mb-3">Invoice History</h3>
               <div className="space-y-2">
                 {[
-                  { date: "Mar 1, 2024", amount: "$497.00" },
-                  { date: "Feb 1, 2024", amount: "$497.00" },
-                  { date: "Jan 1, 2024", amount: "$497.00" },
+                  { date: "Mar 1, 2024", amount: "$49.00" },
+                  { date: "Feb 1, 2024", amount: "$49.00" },
+                  { date: "Jan 1, 2024", amount: "$49.00" },
                 ].map((inv) => (
                   <div key={inv.date} className="flex items-center justify-between p-3 rounded-lg bg-background">
                     <div className="flex items-center gap-3">

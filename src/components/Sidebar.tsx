@@ -71,7 +71,7 @@ export function Sidebar({ collapsed, onToggle, mobile, onNavigate }: SidebarProp
               <span className="text-accent-foreground font-heading font-bold text-xs">MB</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate">Tennessee Fencing</p>
+              <p className="text-sm font-semibold truncate">My Business</p>
               <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
                 Growth Plan
               </span>
