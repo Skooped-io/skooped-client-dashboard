@@ -15,7 +15,7 @@ const trafficSources = [
 
 const topPages = [
   { page: "/", views: 487, avgTime: "2:34", bounce: "32%" },
-  { page: "/services/vinyl-fencing", views: 234, avgTime: "3:12", bounce: "28%" },
+  { page: "/services", views: 234, avgTime: "3:12", bounce: "28%" },
   { page: "/gallery", views: 189, avgTime: "4:01", bounce: "22%" },
   { page: "/contact", views: 156, avgTime: "1:45", bounce: "41%" },
   { page: "/about", views: 98, avgTime: "2:10", bounce: "35%" },
