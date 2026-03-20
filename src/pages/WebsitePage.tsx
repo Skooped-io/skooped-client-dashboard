@@ -9,7 +9,7 @@ const performanceScores = [
 
 const recentChanges = [
   { action: "Updated homepage hero image", agent: "Bob", date: "March 18" },
-  { action: "Added new service page: Vinyl Fencing", agent: "Bob", date: "March 15" },
+  { action: "Added new service page", agent: "Bob", date: "March 15" },
   { action: "Optimized images for faster loading", agent: "Bob", date: "March 12" },
   { action: "Fixed mobile navigation menu", agent: "Bob", date: "March 10" },
 ];
