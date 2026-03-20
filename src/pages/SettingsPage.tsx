@@ -20,12 +20,12 @@ export default function SettingsPage() {
         <TabsContent value="profile">
           <div className="bg-card rounded-lg p-5 space-y-4">
             {[
-              { label: "Business Name", value: "Tennessee Fencing Co." },
-              { label: "Contact Name", value: "John Mitchell" },
-              { label: "Email", value: "john@tennesseefencing.com" },
-              { label: "Phone", value: "(615) 555-0123" },
-              { label: "Website URL", value: "tennesseefencing.com" },
-              { label: "Industry", value: "Fencing Contractor" },
+              { label: "Business Name", value: "" },
+              { label: "Contact Name", value: "" },
+              { label: "Email", value: "" },
+              { label: "Phone", value: "" },
+              { label: "Website URL", value: "" },
+              { label: "Industry", value: "" },
             ].map((field) => (
               <div key={field.label}>
                 <label className="text-sm font-medium text-muted-foreground block mb-1.5">{field.label}</label>
