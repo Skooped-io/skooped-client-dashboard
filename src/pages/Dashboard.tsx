@@ -28,7 +28,7 @@ export default function Dashboard() {
     <div className="space-y-6 animate-fade-in max-w-6xl">
       {/* Welcome */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-heading font-bold">{greeting}, Tennessee Fencing</h1>
+        <h1 className="text-2xl md:text-3xl font-heading font-bold">{greeting}, Your Business</h1>
         <p className="text-muted-foreground mt-1">{dateStr} — Here's what your team has been up to</p>
       </div>
 
