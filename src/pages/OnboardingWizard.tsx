@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import {
   Check, ChevronRight, Upload, X, Sparkles, ExternalLink,
   Hammer, Fence, Wind, Wrench, TreePine, Scissors, Heart, Paintbrush,
-  Crown, Loader2, MapPin, Building2,
+  Crown, Loader2, MapPin, Building2, Home, Car, Dumbbell, Zap, Brain,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,14 +17,18 @@ import { Label } from "@/components/ui/label";
 const TOTAL_STEPS = 7;
 
 const INDUSTRY_TEMPLATES = [
-  { id: "Roofing", label: "Roofing", icon: Hammer },
-  { id: "Fencing", label: "Fencing", icon: Fence },
-  { id: "HVAC", label: "HVAC", icon: Wind },
-  { id: "Plumbing", label: "Plumbing", icon: Wrench },
-  { id: "Landscaping", label: "Landscaping", icon: TreePine },
-  { id: "Salon", label: "Salon & Spa", icon: Scissors },
-  { id: "Therapy", label: "Therapy & Wellness", icon: Heart },
-  { id: "Painting", label: "Painting", icon: Paintbrush },
+  { id: "Roofing", label: "Roofing", icon: Home, preview: "https://skooped-io.github.io/roofing-template/" },
+  { id: "Landscaping", label: "Landscaping", icon: TreePine, preview: "https://skooped-io.github.io/landscaping-template/" },
+  { id: "Fencing", label: "Fencing", icon: Fence, preview: "https://skooped-io.github.io/fencing-template/" },
+  { id: "Therapy", label: "Therapy", icon: Heart, preview: "https://skooped-io.github.io/therapy-template/" },
+  { id: "Construction", label: "Construction", icon: Hammer, preview: "https://skooped-io.github.io/construction-template/" },
+  { id: "AutoRepair", label: "Auto Repair", icon: Car, preview: "https://skooped-io.github.io/auto-repair-template/" },
+  { id: "LifeCoaching", label: "Life Coaching", icon: Brain, preview: "https://skooped-io.github.io/life-coaching-template/" },
+  { id: "RealEstate", label: "Real Estate", icon: Building2, preview: "https://skooped-io.github.io/real-estate-agent-template/" },
+  { id: "PersonalTraining", label: "Personal Training", icon: Dumbbell, preview: "https://skooped-io.github.io/personal-training-template/" },
+  { id: "Salon", label: "Salon / Barber", icon: Scissors, preview: "https://skooped-io.github.io/salon-barber-shop-template/" },
+  { id: "Plumbing", label: "Plumbing", icon: Wrench, preview: "https://skooped-io.github.io/plumbing-template/" },
+  { id: "Electrical", label: "Electrical", icon: Zap, preview: "https://skooped-io.github.io/electrical-template/" },
 ];
 
 const INDUSTRY_SERVICES: Record<string, string[]> = {
@@ -36,6 +40,12 @@ const INDUSTRY_SERVICES: Record<string, string[]> = {
   Salon: ["Haircuts", "Color & Highlights", "Blowouts", "Extensions", "Facials", "Waxing", "Manicure & Pedicure", "Massage", "Bridal Services"],
   Therapy: ["Individual Therapy", "Couples Therapy", "Family Therapy", "Group Sessions", "EMDR", "CBT", "Anxiety Treatment", "Depression Treatment", "Trauma Recovery"],
   Painting: ["Interior Painting", "Exterior Painting", "Cabinet Painting", "Deck Staining", "Pressure Washing", "Drywall Repair", "Commercial Painting", "Color Consultation"],
+  Construction: ["General Contracting", "Home Additions", "Kitchen Remodel", "Bathroom Remodel", "Basement Finishing", "Deck Building", "Concrete Work", "Demolition", "Commercial Construction"],
+  AutoRepair: ["Oil Change", "Brake Repair", "Engine Diagnostics", "Transmission Repair", "Tire Service", "AC Repair", "Electrical Systems", "Suspension", "State Inspection"],
+  LifeCoaching: ["Career Coaching", "Executive Coaching", "Relationship Coaching", "Health & Wellness", "Goal Setting", "Accountability", "Mindset Training", "Group Coaching"],
+  RealEstate: ["Buyer Representation", "Seller Representation", "Market Analysis", "Home Staging", "Investment Properties", "First-Time Buyers", "Luxury Homes", "Commercial Real Estate"],
+  PersonalTraining: ["1-on-1 Training", "Group Training", "Online Coaching", "Nutrition Planning", "Weight Loss", "Strength Training", "Sports Performance", "Rehab & Recovery"],
+  Electrical: ["Residential Wiring", "Panel Upgrades", "Outlet Installation", "Lighting", "Ceiling Fans", "Generator Install", "EV Charger Install", "Troubleshooting", "Commercial Electrical"],
 };
 
 const COLOR_PRESETS = [
@@ -273,7 +283,7 @@ export default function OnboardingWizard() {
 
       {/* Industry template grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {INDUSTRY_TEMPLATES.map(({ id, label, icon: Icon }) => (
+        {INDUSTRY_TEMPLATES.map(({ id, label, icon: Icon, preview }) => (
           <button
             key={id}
             type="button"
@@ -291,7 +301,15 @@ export default function OnboardingWizard() {
             )}
             <Icon className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors mb-2" />
             <p className="text-sm font-semibold">{label}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Industry template</p>
+            <a
+              href={preview}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[10px] text-primary hover:underline mt-1 inline-flex items-center gap-0.5"
+            >
+              Preview <ExternalLink className="w-2.5 h-2.5" />
+            </a>
           </button>
         ))}
       </div>
@@ -322,10 +340,11 @@ export default function OnboardingWizard() {
                 </div>
               )}
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">Want something unique? Cooper will design a custom site tailored to your brand.</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Want something unique? Cooper will design a custom site tailored to your brand.</p>
+              <p className="text-xs font-bold text-primary mt-1">$299 one-time</p>
+            </div>
           </div>
-        </div>
-      </button>
+        </button>
 
       {/* Build with Cooper + Jake */}
       <button
@@ -355,6 +374,7 @@ export default function OnboardingWizard() {
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">Get hands-on help from our founder. Strategy, design, and development — personally built for your business.</p>
+            <p className="text-xs font-bold text-accent mt-1">Custom Pricing</p>
           </div>
         </div>
       </button>
