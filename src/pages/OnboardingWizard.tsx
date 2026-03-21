@@ -374,6 +374,7 @@ export default function OnboardingWizard() {
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">Get hands-on help from our founder. Strategy, design, and development — personally built for your business.</p>
+            <p className="text-xs font-bold text-accent mt-1">Custom Pricing</p>
           </div>
         </div>
       </button>
