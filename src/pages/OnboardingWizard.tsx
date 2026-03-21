@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import {
   Check, ChevronRight, Upload, X, Sparkles, ExternalLink,
   Hammer, Fence, Wind, Wrench, TreePine, Scissors, Heart, Paintbrush,
-  Crown, Loader2, MapPin, Building2,
+  Crown, Loader2, MapPin, Building2, Home, Car, Dumbbell, Zap, Brain,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
