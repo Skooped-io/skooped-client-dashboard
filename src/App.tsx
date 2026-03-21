@@ -15,6 +15,7 @@ import AskCooper from "@/pages/AskCooper";
 import SettingsPage from "@/pages/SettingsPage";
 import LoginPage from "@/pages/LoginPage";
 import OnboardingWizard from "@/pages/OnboardingWizard";
+import GoogleAuthCallback from "@/pages/GoogleAuthCallback";
 import PricingPage from "@/pages/PricingPage";
 import NotFound from "@/pages/NotFound";
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<LoginPage defaultTab="signup" />} />
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/auth/callback" element={<GoogleAuthCallback />} />
             <Route
               path="/onboarding"
               element={

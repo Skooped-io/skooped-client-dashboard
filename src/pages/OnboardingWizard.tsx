@@ -927,6 +927,11 @@ export default function OnboardingWizard() {
       <p className="text-muted-foreground max-w-md mx-auto text-sm">
         This lets us manage your Google Business Profile, track your search rankings, and run ads. You can skip this and do it later.
       </p>
+      {googleError && (
+        <div className="max-w-md mx-auto p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-sm text-destructive">
+          {googleError}
+        </div>
+      )}
       {data.googleConnected ? (
         <div className="space-y-5">
           <div className="inline-flex items-center gap-2 p-4 rounded-lg bg-success/10 text-success">
@@ -941,37 +946,43 @@ export default function OnboardingWizard() {
                 <Building2 className="w-4 h-4 text-primary" />
                 Select Your Business
               </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">We found these businesses on your Google account. Pick the one you'd like to connect to Skooped.</p>
+              {googleBusinesses.length > 0 ? (
+                <p className="text-xs text-muted-foreground mt-0.5">We found these businesses on your Google account. Pick the one you'd like to connect to Skooped.</p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-0.5">No Google Business Profile listings were found on this account. You can skip for now and connect later.</p>
+              )}
             </div>
-            <div className="space-y-2">
-              {MOCK_BUSINESSES.map((biz) => (
-                <button
-                  key={biz.name}
-                  type="button"
-                  onClick={() => update({ selectedGoogleBusiness: biz.name })}
-                  className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                    data.selectedGoogleBusiness === biz.name
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-card hover:border-primary/40"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <MapPin className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate">{biz.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{biz.address}</p>
-                    </div>
-                    {data.selectedGoogleBusiness === biz.name && (
-                      <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
-                        <Check className="w-3 h-3 text-primary-foreground" />
+            {googleBusinesses.length > 0 && (
+              <div className="space-y-2">
+                {googleBusinesses.map((biz) => (
+                  <button
+                    key={biz.id}
+                    type="button"
+                    onClick={() => update({ selectedGoogleBusiness: biz.id })}
+                    className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                      data.selectedGoogleBusiness === biz.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-card hover:border-primary/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <MapPin className="w-4 h-4 text-primary" />
                       </div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">{biz.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{biz.address}</p>
+                      </div>
+                      {data.selectedGoogleBusiness === biz.id && (
+                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+                          <Check className="w-3 h-3 text-primary-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -979,10 +990,15 @@ export default function OnboardingWizard() {
           size="lg"
           variant="outline"
           className="px-6 gap-2"
-          onClick={() => update({ googleConnected: true, googleEmail: data.email })}
+          onClick={connectGoogle}
+          disabled={googleLoading}
         >
-          <svg className="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-          Connect Google Account
+          {googleLoading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <svg className="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          )}
+          {googleLoading ? "Connecting..." : "Connect Google Account"}
         </Button>
       )}
       <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">We only request access to Google Search Console, Google Business Profile, and Google Analytics. We never access your Gmail, Drive, or personal data.</p>
