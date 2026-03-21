@@ -1,80 +1,117 @@
 import { useState } from "react";
-import { Send } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Send, Globe, BarChart3, Calendar, Settings } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-const suggestedQuestions = [
-  "How are my Google rankings?",
-  "When is my next social post?",
-  "Can you update my website?",
-  "Show me this month's report",
-  "What should I focus on next?",
+const subjectOptions = [
+  "Website Update",
+  "SEO Question",
+  "Content Request",
+  "Billing Question",
+  "General Question",
+  "Other",
 ];
 
-const demoMessages = [
-  { from: "user", text: "How are my Google rankings doing?" },
-  { from: "cooper", text: "Great question! Your rankings are looking strong. You're currently ranking #3 for 'fencing contractor Franklin TN' — up 3 positions from last month. Scout has been optimizing your content and backlink strategy. Your top 5 keywords have all improved over the past 30 days. Want me to pull up the full keyword report?" },
-  { from: "user", text: "That's awesome! What about my website traffic?" },
-  { from: "cooper", text: "Your website had 1,247 visits this month — a 12% increase from last month. Most of your traffic is coming from organic search (62%), followed by direct visits (21%) and social media (17%). Bob also optimized your page load speed last week, which should help with conversions. Keep it up! 📈" },
+const quickLinks = [
+  { label: "Request a website change", to: "/dashboard/website", icon: Globe },
+  { label: "View my analytics", to: "/dashboard/analytics", icon: BarChart3 },
+  { label: "Check my content schedule", to: "/dashboard/content", icon: Calendar },
+  { label: "Update my business info", to: "/dashboard/settings", icon: Settings },
 ];
 
 export default function AskCooper() {
-  const [messages] = useState(demoMessages);
-  const [input, setInput] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subject || !message.trim()) return;
+    toast({ title: "Message sent!", description: "Cooper will get back to you." });
+    setSent(true);
+    setSubject("");
+    setMessage("");
+    setTimeout(() => setSent(false), 4000);
+  };
 
   return (
-    <div className="animate-fade-in max-w-2xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
-      <div className="mb-4">
-        <h1 className="text-2xl font-heading font-bold">Ask Cooper</h1>
-        <p className="text-muted-foreground text-sm">Your operations lead is here to help</p>
+    <div className="animate-fade-in max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col items-center text-center mb-8">
+        <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center mb-4">
+          <span className="text-2xl font-heading font-bold text-primary">C</span>
+        </div>
+        <h1 className="text-2xl font-heading font-bold">Cooper — Your Operations Lead</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Need something? Send a message and Cooper will get back to you.
+        </p>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-4 pb-4">
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center mb-4">
-              <span className="text-2xl font-heading font-bold text-primary">C</span>
-            </div>
-            <h3 className="font-heading font-bold text-lg mb-2">Hey there! I'm Cooper.</h3>
-            <p className="text-sm text-muted-foreground mb-6">Ask me anything about your marketing, website, or analytics.</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {suggestedQuestions.map((q) => (
-                <button key={q} className="px-3 py-2 text-sm rounded-lg bg-card hover:bg-card-hover transition-colors border border-border">
-                  {q}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Contact Form */}
+      <form onSubmit={handleSubmit} className="bg-card rounded-xl border border-border p-6 space-y-4 mb-8">
+        <div>
+          <label htmlFor="subject" className="block text-sm font-medium mb-1.5">Subject</label>
+          <select
+            id="subject"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="" disabled>Select a topic…</option>
+            {subjectOptions.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </div>
 
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`}>
-            {msg.from === "cooper" && (
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center mr-2 shrink-0 mt-1">
-                <span className="text-xs font-bold text-primary-foreground">C</span>
-              </div>
-            )}
-            <div className={`max-w-[80%] px-4 py-3 rounded-xl text-sm ${
-              msg.from === "user"
-                ? "bg-primary text-primary-foreground rounded-br-sm"
-                : "bg-card rounded-bl-sm"
-            }`}>
-              {msg.text}
-            </div>
-          </div>
-        ))}
-      </div>
+        <div>
+          <label htmlFor="message" className="block text-sm font-medium mb-1.5">Message</label>
+          <textarea
+            id="message"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Describe what you need..."
+            rows={5}
+            className="w-full px-4 py-3 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+          />
+        </div>
 
-      {/* Input */}
-      <div className="flex gap-2 pt-3 border-t border-border">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask me anything about your marketing..."
-          className="flex-1 px-4 py-3 rounded-lg bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-        />
-        <button className="p-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
+        <button
+          type="submit"
+          disabled={!subject || !message.trim()}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <Send className="w-4 h-4" />
+          Send Message
         </button>
+
+        <p className="text-xs text-muted-foreground text-center">
+          Cooper typically responds within a few hours via email.
+        </p>
+
+        {sent && (
+          <p className="text-sm text-center text-primary font-medium animate-fade-in">
+            ✓ Message sent! Cooper will get back to you.
+          </p>
+        )}
+      </form>
+
+      {/* Quick Links */}
+      <div>
+        <h2 className="text-lg font-heading font-bold mb-3">Common Requests</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {quickLinks.map(({ label, to, icon: Icon }) => (
+            <Link
+              key={to}
+              to={to}
+              className="flex items-center gap-3 p-4 rounded-xl bg-card border border-border hover:bg-card/80 transition-colors"
+            >
+              <Icon className="w-5 h-5 text-primary shrink-0" />
+              <span className="text-sm font-medium">{label}</span>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
