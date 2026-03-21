@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import {
-  Check, ChevronRight, Upload, X, Sparkles, ExternalLink,
+  Check, ChevronRight, Upload, X, Sparkles, ExternalLink, Plus,
   Hammer, Fence, Wind, Wrench, TreePine, Scissors, Heart, Paintbrush,
   Crown, Loader2, MapPin, Building2, Home, Car, Dumbbell, Zap, Brain,
 } from "lucide-react";
