@@ -225,8 +225,13 @@ export default function OnboardingWizard() {
   const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
-  const [data, setData] = useState<OnboardingData>(defaultData);
+  const [data, setData] = useState<OnboardingData>(() => ({
+    ...defaultData,
+    email: user?.email || defaultData.email,
+    ownerName: user?.user_metadata?.full_name || user?.user_metadata?.name || "",
+  }));
   const [conciergeConfirmed, setConciergeConfirmed] = useState(false);
+  const [customServiceInput, setCustomServiceInput] = useState("");
 
   const update = useCallback((partial: Partial<OnboardingData>) => {
     setData((d) => ({ ...d, ...partial }));
@@ -239,6 +244,26 @@ export default function OnboardingWizard() {
     setData((d) => ({
       ...d,
       services: d.services.includes(svc) ? d.services.filter((s) => s !== svc) : [...d.services, svc],
+    }));
+  };
+
+  const addCustomService = () => {
+    const trimmed = customServiceInput.trim();
+    if (trimmed && !data.customServices.includes(trimmed) && !data.services.includes(trimmed)) {
+      setData((d) => ({
+        ...d,
+        customServices: [...d.customServices, trimmed],
+        services: [...d.services, trimmed],
+      }));
+      setCustomServiceInput("");
+    }
+  };
+
+  const removeCustomService = (svc: string) => {
+    setData((d) => ({
+      ...d,
+      customServices: d.customServices.filter((s) => s !== svc),
+      services: d.services.filter((s) => s !== svc),
     }));
   };
 
