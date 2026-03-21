@@ -113,7 +113,7 @@ const defaultData: OnboardingData = {
   licenseNumber: "",
   industry: "Roofing",
   services: [],
-  customService: "",
+  customServices: [],
   aboutText: "",
   logo: null,
   primaryColor: "#DC2626",
