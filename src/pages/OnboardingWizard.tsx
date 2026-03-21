@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import {
-  Check, ChevronRight, Upload, X, Sparkles, ExternalLink,
+  Check, ChevronRight, Upload, X, Sparkles, ExternalLink, Plus,
   Hammer, Fence, Wind, Wrench, TreePine, Scissors, Heart, Paintbrush,
   Crown, Loader2, MapPin, Building2, Home, Car, Dumbbell, Zap, Brain,
 } from "lucide-react";
@@ -85,7 +85,7 @@ interface OnboardingData {
   licenseNumber: string;
   industry: string;
   services: string[];
-  customService: string;
+  customServices: string[];
   aboutText: string;
   logo: string | null;
   primaryColor: string;
@@ -113,7 +113,7 @@ const defaultData: OnboardingData = {
   licenseNumber: "",
   industry: "Roofing",
   services: [],
-  customService: "",
+  customServices: [],
   aboutText: "",
   logo: null,
   primaryColor: "#DC2626",
@@ -225,8 +225,13 @@ export default function OnboardingWizard() {
   const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
-  const [data, setData] = useState<OnboardingData>(defaultData);
+  const [data, setData] = useState<OnboardingData>(() => ({
+    ...defaultData,
+    email: user?.email || defaultData.email,
+    ownerName: user?.user_metadata?.full_name || user?.user_metadata?.name || "",
+  }));
   const [conciergeConfirmed, setConciergeConfirmed] = useState(false);
+  const [customServiceInput, setCustomServiceInput] = useState("");
 
   const update = useCallback((partial: Partial<OnboardingData>) => {
     setData((d) => ({ ...d, ...partial }));
@@ -239,6 +244,26 @@ export default function OnboardingWizard() {
     setData((d) => ({
       ...d,
       services: d.services.includes(svc) ? d.services.filter((s) => s !== svc) : [...d.services, svc],
+    }));
+  };
+
+  const addCustomService = () => {
+    const trimmed = customServiceInput.trim();
+    if (trimmed && !data.customServices.includes(trimmed) && !data.services.includes(trimmed)) {
+      setData((d) => ({
+        ...d,
+        customServices: [...d.customServices, trimmed],
+        services: [...d.services, trimmed],
+      }));
+      setCustomServiceInput("");
+    }
+  };
+
+  const removeCustomService = (svc: string) => {
+    setData((d) => ({
+      ...d,
+      customServices: d.customServices.filter((s) => s !== svc),
+      services: d.services.filter((s) => s !== svc),
     }));
   };
 
@@ -482,7 +507,7 @@ export default function OnboardingWizard() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold">Email *</Label>
-          <Input className={inputClass} placeholder="your@email.com" value={data.email} onChange={(e) => update({ email: e.target.value })} />
+          <Input className={`${inputClass} bg-muted cursor-not-allowed`} value={data.email} readOnly disabled />
         </div>
       </div>
       <div className="space-y-1.5">
@@ -508,7 +533,7 @@ export default function OnboardingWizard() {
           <Input className={inputClass} placeholder="If applicable" value={data.licenseNumber} onChange={(e) => update({ licenseNumber: e.target.value })} />
         </div>
       </div>
-      <p className="text-xs text-muted-foreground text-center mt-2">Don't worry — you can update all of this later in Settings.</p>
+      <p className="text-xs text-muted-foreground text-center mt-2">We've pre-filled what we could from your signup. Update anything that needs changing.</p>
     </div>,
 
     // Step 3: Services & Description
@@ -531,8 +556,32 @@ export default function OnboardingWizard() {
             </label>
           ))}
         </div>
-        <div className="mt-2">
-          <Input className={inputClass} placeholder="Other service..." value={data.customService} onChange={(e) => update({ customService: e.target.value })} />
+        <div className="mt-3 space-y-2">
+          <Label className="text-xs font-semibold">Add Custom Service</Label>
+          <div className="flex gap-2">
+            <Input
+              className={`${inputClass} flex-1`}
+              placeholder="Type a service name..."
+              value={customServiceInput}
+              onChange={(e) => setCustomServiceInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomService(); } }}
+            />
+            <Button type="button" size="sm" onClick={addCustomService} disabled={!customServiceInput.trim()}>
+              <Plus className="w-4 h-4 mr-1" /> Add
+            </Button>
+          </div>
+          {data.customServices.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {data.customServices.map((svc) => (
+                <span key={svc} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent text-accent-foreground text-xs font-medium">
+                  {svc}
+                  <button type="button" onClick={() => removeCustomService(svc)} className="hover:text-destructive transition-colors">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <div className="space-y-1.5">
