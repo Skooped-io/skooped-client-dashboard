@@ -283,7 +283,7 @@ export default function OnboardingWizard() {
   const finish = async () => {
     localStorage.setItem("skooped_onboarding", JSON.stringify(data));
     if (user) {
-      await supabase.auth.updateUser({
+      const { error } = await supabase.auth.updateUser({
         data: {
           onboarding_complete: true,
           business_name: data.businessName,
@@ -292,6 +292,11 @@ export default function OnboardingWizard() {
           plan: data.plan,
         },
       });
+      if (error) {
+        console.error("Failed to save onboarding data:", error.message);
+      }
+      // Refresh the session so ProtectedRoute reads the updated user_metadata
+      await supabase.auth.refreshSession();
     }
     navigate("/dashboard");
   };
