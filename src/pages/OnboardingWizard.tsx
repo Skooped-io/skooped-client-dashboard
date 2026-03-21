@@ -507,7 +507,7 @@ export default function OnboardingWizard() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold">Email *</Label>
-          <Input className={inputClass} placeholder="your@email.com" value={data.email} onChange={(e) => update({ email: e.target.value })} />
+          <Input className={`${inputClass} bg-muted cursor-not-allowed`} value={data.email} readOnly disabled />
         </div>
       </div>
       <div className="space-y-1.5">
@@ -533,7 +533,7 @@ export default function OnboardingWizard() {
           <Input className={inputClass} placeholder="If applicable" value={data.licenseNumber} onChange={(e) => update({ licenseNumber: e.target.value })} />
         </div>
       </div>
-      <p className="text-xs text-muted-foreground text-center mt-2">Don't worry — you can update all of this later in Settings.</p>
+      <p className="text-xs text-muted-foreground text-center mt-2">We've pre-filled what we could from your signup. Update anything that needs changing.</p>
     </div>,
 
     // Step 3: Services & Description
