@@ -1,9 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { Check, ChevronRight, Upload, X, Sparkles, ExternalLink } from "lucide-react";
+import {
+  Check, ChevronRight, Upload, X, Sparkles, ExternalLink,
+  Hammer, Fence, Wind, Wrench, TreePine, Scissors, Heart, Paintbrush,
+  Crown, Loader2, MapPin, Building2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,12 +16,26 @@ import { Label } from "@/components/ui/label";
 
 const TOTAL_STEPS = 7;
 
+const INDUSTRY_TEMPLATES = [
+  { id: "Roofing", label: "Roofing", icon: Hammer },
+  { id: "Fencing", label: "Fencing", icon: Fence },
+  { id: "HVAC", label: "HVAC", icon: Wind },
+  { id: "Plumbing", label: "Plumbing", icon: Wrench },
+  { id: "Landscaping", label: "Landscaping", icon: TreePine },
+  { id: "Salon", label: "Salon & Spa", icon: Scissors },
+  { id: "Therapy", label: "Therapy & Wellness", icon: Heart },
+  { id: "Painting", label: "Painting", icon: Paintbrush },
+];
+
 const INDUSTRY_SERVICES: Record<string, string[]> = {
   Roofing: ["Roof Repair", "Roof Replacement", "New Roof Installation", "Roof Inspection", "Emergency Roof Repair", "Storm Damage Repair", "Gutter Installation", "Metal Roofing", "Flat Roofing", "Commercial Roofing", "Shingle Roofing", "Tile Roofing"],
   Fencing: ["Wood Fencing", "Vinyl Fencing", "Chain Link Fencing", "Aluminum Fencing", "Iron Fencing", "Privacy Fencing", "Pool Fencing", "Farm & Ranch Fencing", "Gate Installation", "Fence Repair", "Commercial Fencing", "Custom Fencing"],
   HVAC: ["AC Repair", "AC Installation", "Heating Repair", "Furnace Installation", "Duct Cleaning", "Thermostat Installation", "Maintenance Plans", "Emergency Service", "Commercial HVAC", "Air Quality Testing"],
   Plumbing: ["Drain Cleaning", "Leak Repair", "Water Heater Install", "Pipe Repair", "Sewer Line Repair", "Fixture Installation", "Emergency Plumbing", "Gas Line Repair", "Water Filtration", "Bathroom Remodel"],
   Landscaping: ["Lawn Care", "Landscape Design", "Tree Trimming", "Hardscaping", "Irrigation Systems", "Mulching", "Sod Installation", "Seasonal Cleanup", "Outdoor Lighting", "Retaining Walls"],
+  Salon: ["Haircuts", "Color & Highlights", "Blowouts", "Extensions", "Facials", "Waxing", "Manicure & Pedicure", "Massage", "Bridal Services"],
+  Therapy: ["Individual Therapy", "Couples Therapy", "Family Therapy", "Group Sessions", "EMDR", "CBT", "Anxiety Treatment", "Depression Treatment", "Trauma Recovery"],
+  Painting: ["Interior Painting", "Exterior Painting", "Cabinet Painting", "Deck Staining", "Pressure Washing", "Drywall Repair", "Commercial Painting", "Color Consultation"],
 };
 
 const COLOR_PRESETS = [
@@ -34,6 +52,11 @@ const FONT_OPTIONS = [
   { id: "modern", label: "Modern", description: "Clean sans-serif", fonts: "Inter, DM Sans" },
   { id: "classic", label: "Classic", description: "Slightly serif", fonts: "Playfair Display, Lato" },
   { id: "friendly", label: "Friendly", description: "Rounded", fonts: "Nunito, Quicksand" },
+];
+
+const MOCK_BUSINESSES = [
+  { name: "Jake's Lawn Care", address: "123 Main St, Franklin, TN 37064" },
+  { name: "Anderson Landscaping", address: "456 Oak Ave, Nashville, TN 37203" },
 ];
 
 interface OnboardingData {
@@ -60,10 +83,12 @@ interface OnboardingData {
   fontStyle: string;
   googleConnected: boolean;
   googleEmail: string;
+  selectedGoogleBusiness: string;
+  conciergeRequested: boolean;
 }
 
 const defaultData: OnboardingData = {
-  template: "Starter",
+  template: "Roofing",
   plan: "Growth",
   businessName: "",
   ownerName: "",
@@ -86,6 +111,8 @@ const defaultData: OnboardingData = {
   fontStyle: "modern",
   googleConnected: false,
   googleEmail: "",
+  selectedGoogleBusiness: "",
+  conciergeRequested: false,
 };
 
 function ProgressBar({ step, total }: { step: number; total: number }) {
@@ -108,7 +135,6 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
 function MiniPreview({ data }: { data: OnboardingData }) {
   return (
     <div className="rounded-lg border border-border overflow-hidden shadow-lg bg-background-light" style={{ minHeight: 340 }}>
-      {/* Nav */}
       <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border" style={{ backgroundColor: data.primaryColor }}>
         {data.logo ? (
           <img src={data.logo} alt="Logo" className="h-5 w-5 object-contain rounded" />
@@ -122,7 +148,6 @@ function MiniPreview({ data }: { data: OnboardingData }) {
           ))}
         </div>
       </div>
-      {/* Hero */}
       <div className="px-6 py-8 text-center" style={{ background: `linear-gradient(135deg, ${data.primaryColor}15, ${data.secondaryColor})` }}>
         <h3 className="text-lg font-bold mb-1" style={{ fontFamily: data.fontStyle === "classic" ? "serif" : data.fontStyle === "friendly" ? "Nunito, sans-serif" : "DM Sans, sans-serif" }}>
           {data.businessName || "Your Business Name"}
@@ -132,7 +157,6 @@ function MiniPreview({ data }: { data: OnboardingData }) {
           Get a Free Estimate
         </div>
       </div>
-      {/* Services */}
       <div className="px-6 py-4">
         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Our Services</p>
         <div className="flex flex-wrap gap-1.5">
@@ -141,11 +165,42 @@ function MiniPreview({ data }: { data: OnboardingData }) {
           ))}
         </div>
       </div>
-      {/* Footer */}
       <div className="px-6 py-2 border-t border-border">
         <p className="text-[9px] text-muted-foreground text-center">© {new Date().getFullYear()} {data.businessName || "Your Business"}</p>
       </div>
     </div>
+  );
+}
+
+function CyclingText() {
+  const phrases = [
+    "Setting up your website...",
+    "Configuring your dashboard...",
+    "Optimizing for search engines...",
+    "Almost there...",
+  ];
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((i) => (i + 1) % phrases.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.span
+        key={index}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.3 }}
+        className="text-sm text-primary font-medium"
+      >
+        {phrases[index]}
+      </motion.span>
+    </AnimatePresence>
   );
 }
 
@@ -161,6 +216,7 @@ export default function OnboardingWizard() {
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [data, setData] = useState<OnboardingData>(defaultData);
+  const [conciergeConfirmed, setConciergeConfirmed] = useState(false);
 
   const update = useCallback((partial: Partial<OnboardingData>) => {
     setData((d) => ({ ...d, ...partial }));
@@ -185,6 +241,10 @@ export default function OnboardingWizard() {
     }
   };
 
+  const handleTemplateSelect = (templateId: string) => {
+    update({ template: templateId, industry: templateId });
+  };
+
   const finish = async () => {
     localStorage.setItem("skooped_onboarding", JSON.stringify(data));
     if (user) {
@@ -204,20 +264,120 @@ export default function OnboardingWizard() {
   const inputClass = "bg-card border-border focus:border-primary focus:ring-primary/20 rounded-lg";
 
   const steps = [
-    // Step 0: Welcome
-    <div className="text-center space-y-6">
-      <div className="text-5xl">🎉</div>
-      <h2 className="text-2xl md:text-3xl font-heading font-bold">Let's get your business online</h2>
-      <p className="text-muted-foreground max-w-md mx-auto">This takes about 3 minutes. We'll use this info to build your website and set up your marketing.</p>
-      <div className="inline-flex items-center gap-3 p-4 rounded-lg bg-card border border-border">
-        <div className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">{data.industry}</div>
-        <div>
-          <p className="text-sm font-semibold">{data.plan} Plan</p>
-          <p className="text-xs text-muted-foreground">{data.template} Template</p>
-        </div>
+    // Step 0: Template Selection
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="text-2xl md:text-3xl font-heading font-bold">Let's get your business online</h2>
+        <p className="text-muted-foreground mt-2 max-w-md mx-auto text-sm">Pick a template that fits your industry, or let Cooper build something custom.</p>
       </div>
-      <div>
-        <Button size="lg" onClick={next} className="px-8">Let's Go <ChevronRight className="w-4 h-4 ml-1" /></Button>
+
+      {/* Industry template grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {INDUSTRY_TEMPLATES.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => handleTemplateSelect(id)}
+            className={`relative text-left p-4 rounded-xl border-2 transition-all group ${
+              data.template === id && data.template !== "custom" && data.template !== "concierge"
+                ? "border-primary bg-primary/5 shadow-sm"
+                : "border-border bg-card hover:border-primary/40"
+            }`}
+          >
+            {data.template === id && data.template !== "custom" && data.template !== "concierge" && (
+              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                <Check className="w-3 h-3 text-primary-foreground" />
+              </div>
+            )}
+            <Icon className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors mb-2" />
+            <p className="text-sm font-semibold">{label}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Industry template</p>
+          </button>
+        ))}
+      </div>
+
+      {/* Custom Build with Cooper */}
+      <button
+        type="button"
+        onClick={() => {
+          update({ template: "custom" });
+          setConciergeConfirmed(false);
+        }}
+        className={`w-full text-left p-5 rounded-xl border-2 transition-all ${
+          data.template === "custom"
+            ? "border-primary bg-primary/5 shadow-sm"
+            : "border-dashed border-primary/40 bg-gradient-to-r from-primary/5 to-accent/10 hover:border-primary"
+        }`}
+      >
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Sparkles className="w-6 h-6 text-primary" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className="font-heading font-bold text-base">Custom Build with Cooper</p>
+              {data.template === "custom" && (
+                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                  <Check className="w-3 h-3 text-primary-foreground" />
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground mt-0.5">Want something unique? Cooper will design a custom site tailored to your brand.</p>
+          </div>
+        </div>
+      </button>
+
+      {/* Build with Cooper + Jake */}
+      <button
+        type="button"
+        onClick={() => {
+          update({ template: "concierge", conciergeRequested: true });
+          setConciergeConfirmed(false);
+        }}
+        className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+          data.template === "concierge"
+            ? "border-primary bg-primary/5 shadow-sm"
+            : "border-border bg-card hover:border-primary/40"
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shrink-0">
+            <Crown className="w-5 h-5 text-accent-foreground" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-sm">Build with Cooper + Jake</p>
+              <span className="px-2 py-0.5 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">Concierge</span>
+              {data.template === "concierge" && (
+                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                  <Check className="w-3 h-3 text-primary-foreground" />
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">Get hands-on help from our founder. Strategy, design, and development — personally built for your business.</p>
+          </div>
+        </div>
+      </button>
+
+      {/* Concierge confirmation message */}
+      {data.template === "concierge" && !conciergeConfirmed && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-lg bg-accent/20 border border-accent text-center space-y-3"
+        >
+          <p className="text-sm font-medium">We'll reach out to set up a call with Jake.</p>
+          <p className="text-xs text-muted-foreground">Expect to hear from us within 24 hours.</p>
+          <Button size="sm" onClick={() => setConciergeConfirmed(true)}>
+            Sounds great <Check className="w-3.5 h-3.5 ml-1" />
+          </Button>
+        </motion.div>
+      )}
+
+      <div className="text-center">
+        <Button size="lg" onClick={next} className="px-8">
+          Continue <ChevronRight className="w-4 h-4 ml-1" />
+        </Button>
       </div>
     </div>,
 
@@ -331,7 +491,7 @@ export default function OnboardingWizard() {
       <p className="text-xs text-muted-foreground text-center mt-2">Don't worry — you can update all of this later in Settings.</p>
     </div>,
 
-    // Step 2: Services & Description
+    // Step 3: Services & Description
     <div className="space-y-5">
       <div className="text-center mb-4">
         <h2 className="text-xl md:text-2xl font-heading font-bold">Services & Description</h2>
@@ -371,14 +531,13 @@ export default function OnboardingWizard() {
       </div>
     </div>,
 
-    // Step 3: Brand & Design
+    // Step 4: Brand & Design
     <div className="space-y-5">
       <div className="text-center mb-4">
         <h2 className="text-xl md:text-2xl font-heading font-bold">Brand & Design</h2>
         <p className="text-sm text-muted-foreground">Make it yours — changes update the preview live</p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left: Controls */}
         <div className="space-y-5">
           {/* Logo */}
           <div className="space-y-2">
@@ -464,16 +623,58 @@ export default function OnboardingWizard() {
       </div>
     </div>,
 
-    // Step 4: Connect Google
+    // Step 5: Connect Google
     <div className="text-center space-y-6">
       <h2 className="text-xl md:text-2xl font-heading font-bold">Connect your Google account</h2>
       <p className="text-muted-foreground max-w-md mx-auto text-sm">
         This lets us manage your Google Business Profile, track your search rankings, and run ads. You can skip this and do it later.
       </p>
       {data.googleConnected ? (
-        <div className="inline-flex items-center gap-2 p-4 rounded-lg bg-success/10 text-success">
-          <Check className="w-5 h-5" />
-          <span className="font-semibold text-sm">Connected as {data.googleEmail}</span>
+        <div className="space-y-5">
+          <div className="inline-flex items-center gap-2 p-4 rounded-lg bg-success/10 text-success">
+            <Check className="w-5 h-5" />
+            <span className="font-semibold text-sm">Connected as {data.googleEmail}</span>
+          </div>
+
+          {/* Business Selection */}
+          <div className="max-w-md mx-auto text-left space-y-3">
+            <div>
+              <h3 className="font-heading font-bold text-base flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-primary" />
+                Select Your Business
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">We found these businesses on your Google account. Pick the one you'd like to connect to Skooped.</p>
+            </div>
+            <div className="space-y-2">
+              {MOCK_BUSINESSES.map((biz) => (
+                <button
+                  key={biz.name}
+                  type="button"
+                  onClick={() => update({ selectedGoogleBusiness: biz.name })}
+                  className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                    data.selectedGoogleBusiness === biz.name
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-card hover:border-primary/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <MapPin className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold truncate">{biz.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{biz.address}</p>
+                    </div>
+                    {data.selectedGoogleBusiness === biz.name && (
+                      <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+                        <Check className="w-3 h-3 text-primary-foreground" />
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       ) : (
         <Button
@@ -489,7 +690,7 @@ export default function OnboardingWizard() {
       <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">We only request access to Google Search Console, Google Business Profile, and Google Analytics. We never access your Gmail, Drive, or personal data.</p>
     </div>,
 
-    // Step 5: All Done
+    // Step 6: All Done
     <div className="text-center space-y-6">
       <motion.div
         initial={{ scale: 0 }}
@@ -510,17 +711,23 @@ export default function OnboardingWizard() {
       <div className="max-w-xs mx-auto space-y-3 text-left">
         {[
           { done: true, text: "Account created" },
-          { done: false, text: "Website building...", loading: true },
+          { done: false, text: "", loading: true },
           { done: false, text: "SEO setup starting within 24 hours" },
           { done: false, text: "First social posts scheduled this week" },
         ].map((item, i) => (
           <div key={i} className="flex items-center gap-3">
             {item.done ? (
               <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center"><Check className="w-3 h-3 text-success-foreground" /></div>
+            ) : item.loading ? (
+              <Loader2 className="w-5 h-5 text-primary animate-spin" />
             ) : (
-              <div className={`w-5 h-5 rounded-full border-2 ${item.loading ? "border-primary animate-pulse" : "border-border"}`} />
+              <div className="w-5 h-5 rounded-full border-2 border-border" />
             )}
-            <span className={`text-sm ${item.done ? "text-foreground" : "text-muted-foreground"}`}>{item.text}</span>
+            {item.loading ? (
+              <CyclingText />
+            ) : (
+              <span className={`text-sm ${item.done ? "text-foreground" : "text-muted-foreground"}`}>{item.text}</span>
+            )}
           </div>
         ))}
       </div>
@@ -536,7 +743,6 @@ export default function OnboardingWizard() {
 
   return (
     <div className="min-h-screen bg-background-light flex flex-col">
-      {/* Header */}
       <div className="flex items-center justify-center py-6">
         <div className="flex items-center gap-2">
           <img src="/skooped-logo.svg" alt="Skooped" className="h-7" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -544,12 +750,10 @@ export default function OnboardingWizard() {
         </div>
       </div>
 
-      {/* Progress */}
       <div className="px-6 pb-6">
         <ProgressBar step={step} total={TOTAL_STEPS} />
       </div>
 
-      {/* Step Content */}
       <div className="flex-1 flex items-start justify-center px-4 pb-12">
         <div className="w-full max-w-2xl">
           <AnimatePresence mode="wait" custom={dir}>
@@ -567,7 +771,6 @@ export default function OnboardingWizard() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Navigation */}
           {!isFirstStep && !isLastStep && (
             <div className="flex items-center justify-between mt-6">
               <button onClick={back} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
