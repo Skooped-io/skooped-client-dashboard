@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { fetchGoogleBusinessLocations } from "@/lib/googleBusinessProfile";
+import { buildSiteConfig, saveSiteConfig } from "@/lib/templateConfig";
 import {
   Check, ChevronRight, Upload, X, Sparkles, ExternalLink, Plus,
   Hammer, Fence, Wind, Wrench, TreePine, Scissors, Heart, Paintbrush,
@@ -489,6 +490,35 @@ export default function OnboardingWizard() {
       if (error) {
         console.error("Failed to save onboarding data:", error.message);
       }
+
+      // Build and persist the canonical site config for the deployment pipeline.
+      const siteConfig = buildSiteConfig({
+        business_name: data.businessName,
+        owner_name: data.ownerName,
+        phone: data.phone,
+        email: data.email,
+        street: data.street,
+        city: data.city,
+        state: data.state,
+        zip: data.zip,
+        service_area: data.serviceArea,
+        year_established: data.yearEstablished,
+        license_number: data.licenseNumber,
+        industry: data.industry,
+        services: data.services,
+        about_text: data.aboutText,
+        primary_color: data.primaryColor,
+        secondary_color: data.secondaryColor,
+        font_style: data.fontStyle,
+        logo_url: data.logo,
+        template: data.template,
+        plan: data.plan,
+        google_business_id: data.selectedGoogleBusiness || null,
+      });
+      await saveSiteConfig(user.id, siteConfig).catch((err) => {
+        console.error("Failed to save site config:", err);
+      });
+
       // Refresh the session so ProtectedRoute reads the updated user_metadata
       await supabase.auth.refreshSession();
     }
