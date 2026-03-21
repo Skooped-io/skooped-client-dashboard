@@ -40,6 +40,12 @@ const INDUSTRY_SERVICES: Record<string, string[]> = {
   Salon: ["Haircuts", "Color & Highlights", "Blowouts", "Extensions", "Facials", "Waxing", "Manicure & Pedicure", "Massage", "Bridal Services"],
   Therapy: ["Individual Therapy", "Couples Therapy", "Family Therapy", "Group Sessions", "EMDR", "CBT", "Anxiety Treatment", "Depression Treatment", "Trauma Recovery"],
   Painting: ["Interior Painting", "Exterior Painting", "Cabinet Painting", "Deck Staining", "Pressure Washing", "Drywall Repair", "Commercial Painting", "Color Consultation"],
+  Construction: ["General Contracting", "Home Additions", "Kitchen Remodel", "Bathroom Remodel", "Basement Finishing", "Deck Building", "Concrete Work", "Demolition", "Commercial Construction"],
+  AutoRepair: ["Oil Change", "Brake Repair", "Engine Diagnostics", "Transmission Repair", "Tire Service", "AC Repair", "Electrical Systems", "Suspension", "State Inspection"],
+  LifeCoaching: ["Career Coaching", "Executive Coaching", "Relationship Coaching", "Health & Wellness", "Goal Setting", "Accountability", "Mindset Training", "Group Coaching"],
+  RealEstate: ["Buyer Representation", "Seller Representation", "Market Analysis", "Home Staging", "Investment Properties", "First-Time Buyers", "Luxury Homes", "Commercial Real Estate"],
+  PersonalTraining: ["1-on-1 Training", "Group Training", "Online Coaching", "Nutrition Planning", "Weight Loss", "Strength Training", "Sports Performance", "Rehab & Recovery"],
+  Electrical: ["Residential Wiring", "Panel Upgrades", "Outlet Installation", "Lighting", "Ceiling Fans", "Generator Install", "EV Charger Install", "Troubleshooting", "Commercial Electrical"],
 };
 
 const COLOR_PRESETS = [
