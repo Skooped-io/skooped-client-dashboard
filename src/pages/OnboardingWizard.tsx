@@ -283,7 +283,7 @@ export default function OnboardingWizard() {
 
       {/* Industry template grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {INDUSTRY_TEMPLATES.map(({ id, label, icon: Icon }) => (
+        {INDUSTRY_TEMPLATES.map(({ id, label, icon: Icon, preview }) => (
           <button
             key={id}
             type="button"
@@ -301,7 +301,15 @@ export default function OnboardingWizard() {
             )}
             <Icon className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors mb-2" />
             <p className="text-sm font-semibold">{label}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Industry template</p>
+            <a
+              href={preview}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[10px] text-primary hover:underline mt-1 inline-flex items-center gap-0.5"
+            >
+              Preview <ExternalLink className="w-2.5 h-2.5" />
+            </a>
           </button>
         ))}
       </div>
