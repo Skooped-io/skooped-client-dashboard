@@ -1,8 +1,9 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { fetchGoogleBusinessLocations } from "@/lib/googleBusinessProfile";
 import {
   Check, ChevronRight, Upload, X, Sparkles, ExternalLink, Plus,
   Hammer, Fence, Wind, Wrench, TreePine, Scissors, Heart, Paintbrush,
@@ -64,10 +65,11 @@ const FONT_OPTIONS = [
   { id: "friendly", label: "Friendly", description: "Rounded", fonts: "Nunito, Quicksand" },
 ];
 
-const MOCK_BUSINESSES = [
-  { name: "Jake's Lawn Care", address: "123 Main St, Franklin, TN 37064" },
-  { name: "Anderson Landscaping", address: "456 Oak Ave, Nashville, TN 37203" },
-];
+interface GoogleBusiness {
+  id: string;
+  name: string;
+  address: string;
+}
 
 interface OnboardingData {
   template: string;
@@ -232,12 +234,109 @@ export default function OnboardingWizard() {
   }));
   const [conciergeConfirmed, setConciergeConfirmed] = useState(false);
   const [customServiceInput, setCustomServiceInput] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+  const [googleBusinesses, setGoogleBusinesses] = useState<GoogleBusiness[]>([]);
+  const googleCompletedRef = useRef(false);
 
   const update = useCallback((partial: Partial<OnboardingData>) => {
     setData((d) => ({ ...d, ...partial }));
   }, []);
 
-  const next = () => { setDir(1); setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1)); };
+  // On mount, hydrate form state from existing user_metadata and resume at the right step.
+  useEffect(() => {
+    const m = user?.user_metadata;
+    if (!m) return;
+
+    const updates: Partial<OnboardingData> = {};
+    if (m.template) updates.template = m.template;
+    if (m.industry) updates.industry = m.industry;
+    if (m.plan) updates.plan = m.plan;
+    if (m.business_name) updates.businessName = m.business_name;
+    if (m.owner_name) updates.ownerName = m.owner_name;
+    if (m.phone) updates.phone = m.phone;
+    if (m.street) updates.street = m.street;
+    if (m.city) updates.city = m.city;
+    if (m.state) updates.state = m.state;
+    if (m.zip) updates.zip = m.zip;
+    if (m.service_area) updates.serviceArea = m.service_area;
+    if (m.year_established) updates.yearEstablished = m.year_established;
+    if (m.license_number) updates.licenseNumber = m.license_number;
+    if (m.services) updates.services = m.services;
+    if (m.about_text) updates.aboutText = m.about_text;
+    if (m.primary_color) updates.primaryColor = m.primary_color;
+    if (m.secondary_color) updates.secondaryColor = m.secondary_color;
+    if (m.font_style) updates.fontStyle = m.font_style;
+    if (m.logo_url) updates.logo = m.logo_url;
+    if (m.google_connected) updates.googleConnected = m.google_connected;
+
+    if (Object.keys(updates).length > 0) {
+      setData((d) => ({ ...d, ...updates }));
+    }
+
+    // Resume at the furthest completed step.
+    let startStep = 0;
+    if (m.template) startStep = 1;
+    if (m.plan) startStep = 2;
+    if (m.business_name) startStep = 3;
+    if (m.services) startStep = 4;
+    if (m.primary_color) startStep = 5;
+    if (m.google_connected) startStep = 6;
+    if (startStep > 0) setStep(startStep);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save the current step's data to user_metadata silently (non-blocking).
+  const saveStepData = useCallback((currentStep: number, currentData: OnboardingData) => {
+    if (!user) return;
+
+    let stepPayload: Record<string, unknown> = {};
+    switch (currentStep) {
+      case 0:
+        stepPayload = { template: currentData.template, industry: currentData.industry };
+        break;
+      case 1:
+        stepPayload = { plan: currentData.plan };
+        break;
+      case 2:
+        stepPayload = {
+          business_name: currentData.businessName,
+          owner_name: currentData.ownerName,
+          phone: currentData.phone,
+          street: currentData.street,
+          city: currentData.city,
+          state: currentData.state,
+          zip: currentData.zip,
+          service_area: currentData.serviceArea,
+          year_established: currentData.yearEstablished,
+          license_number: currentData.licenseNumber,
+        };
+        break;
+      case 3:
+        stepPayload = { services: currentData.services, about_text: currentData.aboutText };
+        break;
+      case 4:
+        stepPayload = {
+          primary_color: currentData.primaryColor,
+          secondary_color: currentData.secondaryColor,
+          font_style: currentData.fontStyle,
+          logo_url: currentData.logo,
+        };
+        break;
+      default:
+        return;
+    }
+
+    supabase.auth.updateUser({ data: stepPayload }).catch((err) => {
+      console.error("Failed to auto-save step data:", err);
+    });
+  }, [user]);
+
+  const next = () => {
+    saveStepData(step, data);
+    setDir(1);
+    setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
+  };
   const back = () => { setDir(-1); setStep((s) => Math.max(s - 1, 0)); };
 
   const toggleService = (svc: string) => {
@@ -280,9 +379,98 @@ export default function OnboardingWizard() {
     update({ template: templateId, industry: templateId });
   };
 
+  const connectGoogle = async () => {
+    setGoogleLoading(true);
+    setGoogleError(null);
+    googleCompletedRef.current = false;
+
+    // If the user already signed in with Google, provider_token is in the session.
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    if (currentSession?.provider_token) {
+      try {
+        const businesses = await fetchGoogleBusinessLocations(currentSession.provider_token);
+        setGoogleBusinesses(businesses);
+        update({
+          googleConnected: true,
+          googleEmail: currentSession.user.email ?? data.email,
+          ...(businesses.length === 1 ? { selectedGoogleBusiness: businesses[0].id } : {}),
+        });
+      } catch {
+        setGoogleError("Connected, but we couldn't load your Google Business listings. You can skip for now and reconnect later.");
+        update({ googleConnected: true, googleEmail: currentSession.user.email ?? data.email });
+      }
+      setGoogleLoading(false);
+      return;
+    }
+
+    // Initiate Google OAuth in a popup with the required scopes.
+    const { data: oauthData, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        skipBrowserRedirect: true,
+        scopes: [
+          "https://www.googleapis.com/auth/business.manage",
+          "https://www.googleapis.com/auth/webmasters.readonly",
+          "https://www.googleapis.com/auth/analytics.readonly",
+        ].join(" "),
+        queryParams: { access_type: "offline", prompt: "consent" },
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error || !oauthData?.url) {
+      setGoogleError("Failed to start Google authorization. Please try again.");
+      setGoogleLoading(false);
+      return;
+    }
+
+    const popup = window.open(oauthData.url, "GoogleOAuth", "width=600,height=700,scrollbars=yes");
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.provider_token && !googleCompletedRef.current) {
+        googleCompletedRef.current = true;
+        subscription.unsubscribe();
+        popup?.close();
+
+        // Persist tokens in user_metadata so Scout/backend can use them later.
+        await supabase.auth.updateUser({
+          data: {
+            google_access_token: session.provider_token,
+            google_refresh_token: session.provider_refresh_token ?? null,
+            google_connected: true,
+          },
+        });
+
+        try {
+          const businesses = await fetchGoogleBusinessLocations(session.provider_token);
+          setGoogleBusinesses(businesses);
+          update({
+            googleConnected: true,
+            googleEmail: session.user.email ?? data.email,
+            ...(businesses.length === 1 ? { selectedGoogleBusiness: businesses[0].id } : {}),
+          });
+        } catch {
+          setGoogleError("Connected! But we couldn't load your Google Business listings. You can skip for now.");
+          update({ googleConnected: true, googleEmail: session.user.email ?? data.email });
+        }
+        setGoogleLoading(false);
+      }
+    });
+
+    // Handle user closing the popup without completing OAuth.
+    const pollTimer = setInterval(() => {
+      if (popup?.closed && !googleCompletedRef.current) {
+        clearInterval(pollTimer);
+        subscription.unsubscribe();
+        setGoogleLoading(false);
+      }
+    }, 1000);
+  };
+
   const finish = async () => {
     localStorage.setItem("skooped_onboarding", JSON.stringify(data));
     if (user) {
+      const selectedBiz = googleBusinesses.find((b) => b.id === data.selectedGoogleBusiness);
       const { error } = await supabase.auth.updateUser({
         data: {
           onboarding_complete: true,
@@ -290,6 +478,12 @@ export default function OnboardingWizard() {
           industry: data.industry,
           services: data.services,
           plan: data.plan,
+          ...(data.selectedGoogleBusiness
+            ? {
+                google_business_id: data.selectedGoogleBusiness,
+                google_business_name: selectedBiz?.name ?? null,
+              }
+            : {}),
         },
       });
       if (error) {
