@@ -583,6 +583,11 @@ export default function OnboardingWizard() {
             </div>
           )}
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold">About Your Business</Label>
+        <Textarea
+          className={`${inputClass} min-h-[100px]`}
           placeholder="Tell us what makes your business special. We'll use this on your website's About section."
           value={data.aboutText}
           onChange={(e) => update({ aboutText: e.target.value })}
