@@ -17,14 +17,18 @@ import { Label } from "@/components/ui/label";
 const TOTAL_STEPS = 7;
 
 const INDUSTRY_TEMPLATES = [
-  { id: "Roofing", label: "Roofing", icon: Hammer },
-  { id: "Fencing", label: "Fencing", icon: Fence },
-  { id: "HVAC", label: "HVAC", icon: Wind },
-  { id: "Plumbing", label: "Plumbing", icon: Wrench },
-  { id: "Landscaping", label: "Landscaping", icon: TreePine },
-  { id: "Salon", label: "Salon & Spa", icon: Scissors },
-  { id: "Therapy", label: "Therapy & Wellness", icon: Heart },
-  { id: "Painting", label: "Painting", icon: Paintbrush },
+  { id: "Roofing", label: "Roofing", icon: Home, preview: "https://skooped-io.github.io/roofing-template/" },
+  { id: "Landscaping", label: "Landscaping", icon: TreePine, preview: "https://skooped-io.github.io/landscaping-template/" },
+  { id: "Fencing", label: "Fencing", icon: Fence, preview: "https://skooped-io.github.io/fencing-template/" },
+  { id: "Therapy", label: "Therapy", icon: Heart, preview: "https://skooped-io.github.io/therapy-template/" },
+  { id: "Construction", label: "Construction", icon: Hammer, preview: "https://skooped-io.github.io/construction-template/" },
+  { id: "AutoRepair", label: "Auto Repair", icon: Car, preview: "https://skooped-io.github.io/auto-repair-template/" },
+  { id: "LifeCoaching", label: "Life Coaching", icon: Brain, preview: "https://skooped-io.github.io/life-coaching-template/" },
+  { id: "RealEstate", label: "Real Estate", icon: Building2, preview: "https://skooped-io.github.io/real-estate-agent-template/" },
+  { id: "PersonalTraining", label: "Personal Training", icon: Dumbbell, preview: "https://skooped-io.github.io/personal-training-template/" },
+  { id: "Salon", label: "Salon / Barber", icon: Scissors, preview: "https://skooped-io.github.io/salon-barber-shop-template/" },
+  { id: "Plumbing", label: "Plumbing", icon: Wrench, preview: "https://skooped-io.github.io/plumbing-template/" },
+  { id: "Electrical", label: "Electrical", icon: Zap, preview: "https://skooped-io.github.io/electrical-template/" },
 ];
 
 const INDUSTRY_SERVICES: Record<string, string[]> = {
