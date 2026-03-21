@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { Mail, AlertCircle } from "lucide-react";
 
 interface LoginPageProps {
   defaultTab?: "signin" | "signup";
@@ -66,7 +67,17 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
     }
   };
 
+  const handlePasswordReset = async () => {
+    if (!signUpEmail) return;
+    await supabase.auth.resetPasswordForEmail(signUpEmail, {
+      redirectTo: window.location.origin + "/login",
+    });
+  };
+
   const isEmailNotConfirmed = signInError.toLowerCase().includes("email not confirmed");
+  const isDuplicateEmail = signUpError.toLowerCase().includes("user already registered") ||
+    signUpError.toLowerCase().includes("already been registered") ||
+    signUpError.toLowerCase().includes("already exists");
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -272,9 +283,37 @@ export default function LoginPage({ defaultTab = "signin" }: LoginPageProps) {
                   />
                 </div>
 
-                {signUpError && (
+                {signUpError && isDuplicateEmail ? (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0 mt-0.5">
+                        <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-1">An account with this email already exists.</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab("signin")}
+                            className="text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline"
+                          >
+                            Log in instead
+                          </button>
+                          <span className="text-xs text-amber-400">·</span>
+                          <button
+                            type="button"
+                            onClick={handlePasswordReset}
+                            className="text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline"
+                          >
+                            Reset your password
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : signUpError ? (
                   <p className="text-xs text-destructive">{signUpError}</p>
-                )}
+                ) : null}
 
                 <button
                   type="submit"
