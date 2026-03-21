@@ -340,10 +340,11 @@ export default function OnboardingWizard() {
                 </div>
               )}
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">Want something unique? Cooper will design a custom site tailored to your brand.</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Want something unique? Cooper will design a custom site tailored to your brand.</p>
+              <p className="text-xs font-bold text-primary mt-1">$299 one-time</p>
+            </div>
           </div>
-        </div>
-      </button>
+        </button>
 
       {/* Build with Cooper + Jake */}
       <button
