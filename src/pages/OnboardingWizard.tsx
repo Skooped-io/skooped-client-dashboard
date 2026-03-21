@@ -556,14 +556,33 @@ export default function OnboardingWizard() {
             </label>
           ))}
         </div>
-        <div className="mt-2">
-          <Input className={inputClass} placeholder="Other service..." value={data.customService} onChange={(e) => update({ customService: e.target.value })} />
+        <div className="mt-3 space-y-2">
+          <Label className="text-xs font-semibold">Add Custom Service</Label>
+          <div className="flex gap-2">
+            <Input
+              className={`${inputClass} flex-1`}
+              placeholder="Type a service name..."
+              value={customServiceInput}
+              onChange={(e) => setCustomServiceInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomService(); } }}
+            />
+            <Button type="button" size="sm" onClick={addCustomService} disabled={!customServiceInput.trim()}>
+              <Plus className="w-4 h-4 mr-1" /> Add
+            </Button>
+          </div>
+          {data.customServices.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {data.customServices.map((svc) => (
+                <span key={svc} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent text-accent-foreground text-xs font-medium">
+                  {svc}
+                  <button type="button" onClick={() => removeCustomService(svc)} className="hover:text-destructive transition-colors">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold">About Your Business</Label>
-        <Textarea
-          className={`${inputClass} min-h-[100px]`}
           placeholder="Tell us what makes your business special. We'll use this on your website's About section."
           value={data.aboutText}
           onChange={(e) => update({ aboutText: e.target.value })}
