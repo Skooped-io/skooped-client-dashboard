@@ -85,7 +85,7 @@ interface OnboardingData {
   licenseNumber: string;
   industry: string;
   services: string[];
-  customService: string;
+  customServices: string[];
   aboutText: string;
   logo: string | null;
   primaryColor: string;
