@@ -1,9 +1,12 @@
+import { useEffect } from "react";
 import { Globe, Search, Phone, Star, ArrowRight } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { TrafficChart } from "@/components/TrafficChart";
 import { AgentActivityFeed } from "@/components/AgentActivityFeed";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const stats = [
   { icon: Globe, label: "Website Visits", value: 1247, trend: "12%", trendUp: true, accentClass: "bg-primary/15 text-primary" },
@@ -21,6 +24,25 @@ const quickActions = [
 
 export default function Dashboard() {
   const { user } = useAuth();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get("checkout");
+    const onboarding = params.get("onboarding");
+
+    if (checkout === "success") {
+      toast.success("Welcome! Your 14-day free trial has started 🎉");
+      supabase.auth.updateUser({ data: { stripe_checkout_complete: true } }).catch(console.error);
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (checkout === "cancelled") {
+      toast("No worries! You can start your trial anytime from Settings.", { duration: 5000 });
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (onboarding === "concierge") {
+      toast.success("You're all set! We'll reach out within 24 hours to get started.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });

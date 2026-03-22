@@ -5,6 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { fetchGoogleBusinessLocations } from "@/lib/googleBusinessProfile";
 import { buildSiteConfig, saveSiteConfig } from "@/lib/templateConfig";
+import { createCheckoutSession } from "@/lib/stripeCheckout";
+import { toast } from "sonner";
 import {
   Check, ChevronRight, Upload, X, Sparkles, ExternalLink, Plus,
   Hammer, Fence, Wind, Wrench, TreePine, Scissors, Heart, Paintbrush,
@@ -522,7 +524,26 @@ export default function OnboardingWizard() {
       // Refresh the session so ProtectedRoute reads the updated user_metadata
       await supabase.auth.refreshSession();
     }
-    navigate("/dashboard");
+
+    // Concierge: skip Stripe, navigate directly
+    if (data.template === "concierge") {
+      navigate("/dashboard?onboarding=concierge");
+      return;
+    }
+
+    // All paid plans: redirect to Stripe Checkout
+    try {
+      const checkoutUrl = await createCheckoutSession(
+        data.plan,
+        user?.email ?? "",
+        user?.id ?? ""
+      );
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      console.error("Stripe Checkout failed:", err);
+      toast.warning("Couldn't start checkout — you can set up billing from Settings.");
+      navigate("/dashboard");
+    }
   };
 
   const inputClass = "bg-card border-border focus:border-primary focus:ring-primary/20 rounded-lg";
