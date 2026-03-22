@@ -1154,7 +1154,11 @@ export default function OnboardingWizard() {
                     Skip for now
                   </button>
                 )}
-                <Button onClick={next}>
+                <Button
+                  onClick={next}
+                  disabled={(step === 2 && step2Attempted && !step2Valid) || (step === 3 && step3Attempted && !step3Valid)}
+                  className={((step === 2 && step2Attempted && !step2Valid) || (step === 3 && step3Attempted && !step3Valid)) ? "opacity-50 cursor-not-allowed" : ""}
+                >
                   {isGoogleStep ? (data.googleConnected ? "Continue" : "Next") : "Next"} <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>
