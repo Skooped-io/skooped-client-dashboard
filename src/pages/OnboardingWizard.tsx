@@ -350,6 +350,15 @@ export default function OnboardingWizard() {
   }, [user]);
 
   const next = () => {
+    // Validate before advancing
+    if (step === 2) {
+      setStep2Attempted(true);
+      if (!step2Valid) return;
+    }
+    if (step === 3) {
+      setStep3Attempted(true);
+      if (!step3Valid) return;
+    }
     saveStepData(step, data);
     setDir(1);
     setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
