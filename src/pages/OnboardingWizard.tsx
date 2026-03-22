@@ -21,18 +21,18 @@ import { Label } from "@/components/ui/label";
 const TOTAL_STEPS = 7;
 
 const INDUSTRY_TEMPLATES = [
-  { id: "Roofing", label: "Roofing", icon: Home, preview: "https://skooped-io.github.io/roofing-template/" },
-  { id: "Landscaping", label: "Landscaping", icon: TreePine, preview: "https://skooped-io.github.io/landscaping-template/" },
-  { id: "Fencing", label: "Fencing", icon: Fence, preview: "https://skooped-io.github.io/fencing-template/" },
-  { id: "Therapy", label: "Therapy", icon: Heart, preview: "https://skooped-io.github.io/therapy-template/" },
-  { id: "Construction", label: "Construction", icon: Hammer, preview: "https://skooped-io.github.io/construction-template/" },
-  { id: "AutoRepair", label: "Auto Repair", icon: Car, preview: "https://skooped-io.github.io/auto-repair-template/" },
-  { id: "LifeCoaching", label: "Life Coaching", icon: Brain, preview: "https://skooped-io.github.io/life-coaching-template/" },
-  { id: "RealEstate", label: "Real Estate", icon: Building2, preview: "https://skooped-io.github.io/real-estate-agent-template/" },
-  { id: "PersonalTraining", label: "Personal Training", icon: Dumbbell, preview: "https://skooped-io.github.io/personal-training-template/" },
-  { id: "Salon", label: "Salon / Barber", icon: Scissors, preview: "https://skooped-io.github.io/salon-barber-shop-template/" },
-  { id: "Plumbing", label: "Plumbing", icon: Wrench, preview: "https://skooped-io.github.io/plumbing-template/" },
-  { id: "Electrical", label: "Electrical", icon: Zap, preview: "https://skooped-io.github.io/electrical-template/" },
+  { id: "Roofing", label: "Roofing", icon: Home, preview: "https://preview-roofing.skooped.io" },
+  { id: "Landscaping", label: "Landscaping", icon: TreePine, preview: "https://preview-landscaping.skooped.io" },
+  { id: "Fencing", label: "Fencing", icon: Fence, preview: "https://preview-fencing.skooped.io" },
+  { id: "Therapy", label: "Therapy", icon: Heart, preview: "https://preview-therapy.skooped.io" },
+  { id: "Construction", label: "Construction", icon: Hammer, preview: "https://preview-construction.skooped.io" },
+  { id: "AutoRepair", label: "Auto Repair", icon: Car, preview: "https://preview-auto-repair.skooped.io" },
+  { id: "LifeCoaching", label: "Life Coaching", icon: Brain, preview: "https://preview-life-coaching.skooped.io" },
+  { id: "RealEstate", label: "Real Estate", icon: Building2, preview: "https://preview-real-estate.skooped.io" },
+  { id: "PersonalTraining", label: "Personal Training", icon: Dumbbell, preview: "https://preview-personal-training.skooped.io" },
+  { id: "Salon", label: "Salon / Barber", icon: Scissors, preview: "https://preview-salon.skooped.io" },
+  { id: "Plumbing", label: "Plumbing", icon: Wrench, preview: "https://preview-plumbing.skooped.io" },
+  { id: "Electrical", label: "Electrical", icon: Zap, preview: "https://preview-electrical.skooped.io" },
 ];
 
 const INDUSTRY_SERVICES: Record<string, string[]> = {

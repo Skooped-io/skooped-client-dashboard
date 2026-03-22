@@ -146,9 +146,9 @@ async function main() {
   const siteConfig =
     (meta.siteConfig as Record<string, unknown> | undefined) ?? meta;
 
-  const template = (siteConfig.template as string) ?? "";
-  const businessName = (siteConfig.businessName as string) ?? "";
-  const ownerName = (siteConfig.ownerName as string) ?? "";
+  const template = (meta.template as string) ?? (siteConfig.template as string) ?? "";
+  const businessName = (meta.business_name as string) ?? (siteConfig.businessName as string) ?? "";
+  const ownerName = (meta.owner_name as string) ?? (meta.full_name as string) ?? (siteConfig.ownerName as string) ?? "";
   const email = user.email ?? "";
 
   console.log(`✅ Fetched user: ${email}`);
@@ -201,6 +201,10 @@ async function main() {
     const siteConfigPath = join(cloneDir, "siteConfig.json");
     writeFileSync(siteConfigPath, JSON.stringify(siteConfig, null, 2), "utf-8");
     console.log("✅ Config injected");
+
+    // ── Step 7.5: Remove old git remote + reinitialize ──────────────────────
+    git("remote remove origin", cloneDir);
+    console.log("✅ Removed old origin remote");
 
     // ── Step 8: Create new GitHub repo ──────────────────────────────────────
     const newRepoName = `site-${slug}`;
