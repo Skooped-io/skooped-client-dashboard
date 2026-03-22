@@ -240,6 +240,20 @@ export default function OnboardingWizard() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [googleBusinesses, setGoogleBusinesses] = useState<GoogleBusiness[]>([]);
+  const [step2Attempted, setStep2Attempted] = useState(false);
+  const [step3Attempted, setStep3Attempted] = useState(false);
+
+  // Step 2 validation
+  const step2Errors = {
+    businessName: data.businessName.trim().length < 2,
+    phone: data.phone.trim().length < 7,
+    city: !data.city.trim(),
+    state: !data.state.trim(),
+  };
+  const step2Valid = !step2Errors.businessName && !step2Errors.phone && !step2Errors.city && !step2Errors.state;
+
+  // Step 3 validation
+  const step3Valid = data.services.length >= 3;
   const googleCompletedRef = useRef(false);
 
   const update = useCallback((partial: Partial<OnboardingData>) => {
@@ -336,6 +350,15 @@ export default function OnboardingWizard() {
   }, [user]);
 
   const next = () => {
+    // Validate before advancing
+    if (step === 2) {
+      setStep2Attempted(true);
+      if (!step2Valid) return;
+    }
+    if (step === 3) {
+      setStep3Attempted(true);
+      if (!step3Valid) return;
+    }
     saveStepData(step, data);
     setDir(1);
     setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
@@ -740,32 +763,40 @@ export default function OnboardingWizard() {
     <div className="space-y-5">
       <div className="text-center mb-6">
         <h2 className="text-xl md:text-2xl font-heading font-bold">Business Details</h2>
-        <p className="text-sm text-muted-foreground">Tell us about your business</p>
+        <p className="text-sm text-muted-foreground">Fields marked <span className="text-destructive">*</span> are required to build your website.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold">Business Name *</Label>
-          <Input className={inputClass} placeholder="e.g., Anderson Roofing Co." value={data.businessName} onChange={(e) => update({ businessName: e.target.value })} />
+          <Label className="text-xs font-semibold">Business Name <span className="text-destructive">*</span></Label>
+          <Input className={`${inputClass} ${step2Attempted && step2Errors.businessName ? "border-destructive" : ""}`} placeholder="e.g., Anderson Roofing Co." value={data.businessName} onChange={(e) => update({ businessName: e.target.value })} />
+          {step2Attempted && step2Errors.businessName && <p className="text-xs text-destructive">This field is required (min 2 characters)</p>}
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold">Your Name *</Label>
+          <Label className="text-xs font-semibold">Your Name</Label>
           <Input className={inputClass} placeholder="Your full name" value={data.ownerName} onChange={(e) => update({ ownerName: e.target.value })} />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold">Phone Number *</Label>
-          <Input className={inputClass} placeholder="Main business number" value={data.phone} onChange={(e) => update({ phone: e.target.value })} />
+          <Label className="text-xs font-semibold">Phone Number <span className="text-destructive">*</span></Label>
+          <Input className={`${inputClass} ${step2Attempted && step2Errors.phone ? "border-destructive" : ""}`} placeholder="Main business number" value={data.phone} onChange={(e) => update({ phone: e.target.value })} />
+          {step2Attempted && step2Errors.phone && <p className="text-xs text-destructive">This field is required (min 7 characters)</p>}
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold">Email *</Label>
+          <Label className="text-xs font-semibold">Email</Label>
           <Input className={`${inputClass} bg-muted cursor-not-allowed`} value={data.email} readOnly disabled />
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label className="text-xs font-semibold">Business Address *</Label>
+        <Label className="text-xs font-semibold">Business Address</Label>
         <Input className={inputClass} placeholder="Street address" value={data.street} onChange={(e) => update({ street: e.target.value })} />
         <div className="grid grid-cols-3 gap-3">
-          <Input className={inputClass} placeholder="City" value={data.city} onChange={(e) => update({ city: e.target.value })} />
-          <Input className={inputClass} placeholder="State" value={data.state} onChange={(e) => update({ state: e.target.value })} />
+          <div className="space-y-1">
+            <Input className={`${inputClass} ${step2Attempted && step2Errors.city ? "border-destructive" : ""}`} placeholder="City *" value={data.city} onChange={(e) => update({ city: e.target.value })} />
+            {step2Attempted && step2Errors.city && <p className="text-xs text-destructive">Required</p>}
+          </div>
+          <div className="space-y-1">
+            <Input className={`${inputClass} ${step2Attempted && step2Errors.state ? "border-destructive" : ""}`} placeholder="State *" value={data.state} onChange={(e) => update({ state: e.target.value })} />
+            {step2Attempted && step2Errors.state && <p className="text-xs text-destructive">Required</p>}
+          </div>
           <Input className={inputClass} placeholder="ZIP" value={data.zip} onChange={(e) => update({ zip: e.target.value })} />
         </div>
       </div>
@@ -783,7 +814,6 @@ export default function OnboardingWizard() {
           <Input className={inputClass} placeholder="If applicable" value={data.licenseNumber} onChange={(e) => update({ licenseNumber: e.target.value })} />
         </div>
       </div>
-      <p className="text-xs text-muted-foreground text-center mt-2">We've pre-filled what we could from your signup. Update anything that needs changing.</p>
     </div>,
 
     // Step 3: Services & Description
@@ -797,7 +827,14 @@ export default function OnboardingWizard() {
         <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">{data.industry}</span>
       </div>
       <div>
-        <Label className="text-xs font-semibold mb-2 block">Services Offered</Label>
+        <div className="flex items-center justify-between mb-2">
+          <Label className="text-xs font-semibold">Services Offered</Label>
+          {data.services.length >= 3 ? (
+            <span className="text-xs font-medium text-green-600">✓ {data.services.length} services selected</span>
+          ) : (
+            <span className="text-xs font-medium text-muted-foreground">{step3Attempted ? <span className="text-destructive">Select at least 3 services to continue ({data.services.length}/3 selected)</span> : `${data.services.length}/3 minimum`}</span>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto pr-1">
           {(INDUSTRY_SERVICES[data.industry] || INDUSTRY_SERVICES.Roofing).map((svc) => (
             <label key={svc} className="flex items-center gap-2 p-2 rounded-lg bg-card hover:bg-card-hover transition-colors cursor-pointer">
@@ -1117,7 +1154,11 @@ export default function OnboardingWizard() {
                     Skip for now
                   </button>
                 )}
-                <Button onClick={next}>
+                <Button
+                  onClick={next}
+                  disabled={(step === 2 && step2Attempted && !step2Valid) || (step === 3 && step3Attempted && !step3Valid)}
+                  className={((step === 2 && step2Attempted && !step2Valid) || (step === 3 && step3Attempted && !step3Valid)) ? "opacity-50 cursor-not-allowed" : ""}
+                >
                   {isGoogleStep ? (data.googleConnected ? "Continue" : "Next") : "Next"} <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>
