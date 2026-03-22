@@ -827,7 +827,14 @@ export default function OnboardingWizard() {
         <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">{data.industry}</span>
       </div>
       <div>
-        <Label className="text-xs font-semibold mb-2 block">Services Offered</Label>
+        <div className="flex items-center justify-between mb-2">
+          <Label className="text-xs font-semibold">Services Offered</Label>
+          {data.services.length >= 3 ? (
+            <span className="text-xs font-medium text-green-600">✓ {data.services.length} services selected</span>
+          ) : (
+            <span className="text-xs font-medium text-muted-foreground">{step3Attempted ? <span className="text-destructive">Select at least 3 services to continue ({data.services.length}/3 selected)</span> : `${data.services.length}/3 minimum`}</span>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto pr-1">
           {(INDUSTRY_SERVICES[data.industry] || INDUSTRY_SERVICES.Roofing).map((svc) => (
             <label key={svc} className="flex items-center gap-2 p-2 rounded-lg bg-card hover:bg-card-hover transition-colors cursor-pointer">
