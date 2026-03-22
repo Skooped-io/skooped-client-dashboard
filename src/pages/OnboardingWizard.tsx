@@ -763,32 +763,40 @@ export default function OnboardingWizard() {
     <div className="space-y-5">
       <div className="text-center mb-6">
         <h2 className="text-xl md:text-2xl font-heading font-bold">Business Details</h2>
-        <p className="text-sm text-muted-foreground">Tell us about your business</p>
+        <p className="text-sm text-muted-foreground">Fields marked <span className="text-destructive">*</span> are required to build your website.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold">Business Name *</Label>
-          <Input className={inputClass} placeholder="e.g., Anderson Roofing Co." value={data.businessName} onChange={(e) => update({ businessName: e.target.value })} />
+          <Label className="text-xs font-semibold">Business Name <span className="text-destructive">*</span></Label>
+          <Input className={`${inputClass} ${step2Attempted && step2Errors.businessName ? "border-destructive" : ""}`} placeholder="e.g., Anderson Roofing Co." value={data.businessName} onChange={(e) => update({ businessName: e.target.value })} />
+          {step2Attempted && step2Errors.businessName && <p className="text-xs text-destructive">This field is required (min 2 characters)</p>}
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold">Your Name *</Label>
+          <Label className="text-xs font-semibold">Your Name</Label>
           <Input className={inputClass} placeholder="Your full name" value={data.ownerName} onChange={(e) => update({ ownerName: e.target.value })} />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold">Phone Number *</Label>
-          <Input className={inputClass} placeholder="Main business number" value={data.phone} onChange={(e) => update({ phone: e.target.value })} />
+          <Label className="text-xs font-semibold">Phone Number <span className="text-destructive">*</span></Label>
+          <Input className={`${inputClass} ${step2Attempted && step2Errors.phone ? "border-destructive" : ""}`} placeholder="Main business number" value={data.phone} onChange={(e) => update({ phone: e.target.value })} />
+          {step2Attempted && step2Errors.phone && <p className="text-xs text-destructive">This field is required (min 7 characters)</p>}
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold">Email *</Label>
+          <Label className="text-xs font-semibold">Email</Label>
           <Input className={`${inputClass} bg-muted cursor-not-allowed`} value={data.email} readOnly disabled />
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label className="text-xs font-semibold">Business Address *</Label>
+        <Label className="text-xs font-semibold">Business Address</Label>
         <Input className={inputClass} placeholder="Street address" value={data.street} onChange={(e) => update({ street: e.target.value })} />
         <div className="grid grid-cols-3 gap-3">
-          <Input className={inputClass} placeholder="City" value={data.city} onChange={(e) => update({ city: e.target.value })} />
-          <Input className={inputClass} placeholder="State" value={data.state} onChange={(e) => update({ state: e.target.value })} />
+          <div className="space-y-1">
+            <Input className={`${inputClass} ${step2Attempted && step2Errors.city ? "border-destructive" : ""}`} placeholder="City *" value={data.city} onChange={(e) => update({ city: e.target.value })} />
+            {step2Attempted && step2Errors.city && <p className="text-xs text-destructive">Required</p>}
+          </div>
+          <div className="space-y-1">
+            <Input className={`${inputClass} ${step2Attempted && step2Errors.state ? "border-destructive" : ""}`} placeholder="State *" value={data.state} onChange={(e) => update({ state: e.target.value })} />
+            {step2Attempted && step2Errors.state && <p className="text-xs text-destructive">Required</p>}
+          </div>
           <Input className={inputClass} placeholder="ZIP" value={data.zip} onChange={(e) => update({ zip: e.target.value })} />
         </div>
       </div>
@@ -806,7 +814,6 @@ export default function OnboardingWizard() {
           <Input className={inputClass} placeholder="If applicable" value={data.licenseNumber} onChange={(e) => update({ licenseNumber: e.target.value })} />
         </div>
       </div>
-      <p className="text-xs text-muted-foreground text-center mt-2">We've pre-filled what we could from your signup. Update anything that needs changing.</p>
     </div>,
 
     // Step 3: Services & Description
