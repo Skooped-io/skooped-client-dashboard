@@ -240,6 +240,20 @@ export default function OnboardingWizard() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [googleBusinesses, setGoogleBusinesses] = useState<GoogleBusiness[]>([]);
+  const [step2Attempted, setStep2Attempted] = useState(false);
+  const [step3Attempted, setStep3Attempted] = useState(false);
+
+  // Step 2 validation
+  const step2Errors = {
+    businessName: data.businessName.trim().length < 2,
+    phone: data.phone.trim().length < 7,
+    city: !data.city.trim(),
+    state: !data.state.trim(),
+  };
+  const step2Valid = !step2Errors.businessName && !step2Errors.phone && !step2Errors.city && !step2Errors.state;
+
+  // Step 3 validation
+  const step3Valid = data.services.length >= 3;
   const googleCompletedRef = useRef(false);
 
   const update = useCallback((partial: Partial<OnboardingData>) => {
