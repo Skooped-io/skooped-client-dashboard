@@ -32,7 +32,16 @@ export default function Dashboard() {
 
     if (checkout === "success") {
       toast.success("Welcome! Your 14-day free trial has started 🎉");
-      supabase.auth.updateUser({ data: { stripe_checkout_complete: true } }).catch(console.error);
+      supabase.auth.updateUser({
+        data: {
+          stripe_checkout_complete: true,
+          deployment_requested: true,
+          deployment_status: "pending",
+        },
+      }).catch(console.error);
+      toast("Your website is being built! You'll get an email when it's live (usually under 60 seconds).", {
+        duration: 8000,
+      });
       window.history.replaceState({}, "", window.location.pathname);
     } else if (checkout === "cancelled") {
       toast("No worries! You can start your trial anytime from Settings.", { duration: 5000 });
