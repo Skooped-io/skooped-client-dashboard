@@ -88,6 +88,48 @@ async function fetchBusinessProfile(userId: string) {
   return bpRows.length ? bpRows[0] : null;
 }
 
+/**
+ * Write to Supabase tables via REST API (service role bypasses RLS).
+ */
+async function supabaseInsert(table: string, row: Record<string, unknown>) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY!,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify(row),
+    });
+    if (!res.ok) {
+      console.warn(`⚠️ Supabase insert to ${table} failed: ${res.status}`);
+    }
+  } catch (err: any) {
+    console.warn(`⚠️ Supabase insert to ${table} error: ${err.message}`);
+  }
+}
+
+async function getOrgId(userId: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/organization_members?user_id=eq.${userId}&select=org_id&limit=1`,
+      {
+        headers: {
+          apikey: SUPABASE_SERVICE_KEY!,
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        },
+      }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return rows?.[0]?.org_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function sendEmail(to: string, subject: string, html: string) {
   if (!RESEND_API_KEY) { console.log("⚠️ RESEND_API_KEY not set, skipping email"); return; }
   const res = await fetch("https://api.resend.com/emails", {
@@ -224,9 +266,27 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
     );
 
     // ── Step 4: Run deploy pipeline ───────────────────────────────
-    if (template === "custom" || template === "concierge") {
+    if (template === "custom" || template === "custom-cooper" || template === "concierge") {
       console.log(`\nℹ️ Template is '${template}' — skipping auto-deploy. Manual build required.`);
-      await notifySlack(`ℹ️ *${biz}* selected ${template} build — manual action needed.`);
+      await notifySlack(`🎨 *Custom build requested!*\n\nBusiness: *${biz}*\nIndustry: ${industry}\nLocation: ${city}, ${state}\nServices: ${Array.isArray(services) ? services.join(", ") : services}\nPhone: ${phone}\nEmail: ${email}\nPlan: ${plan}\n\nNeeds manual Lovable build.`);
+
+      // Log to Supabase
+      const orgId = await getOrgId(userId);
+      if (orgId) {
+        await supabaseInsert("site_deployments", {
+          org_id: orgId,
+          user_id: userId,
+          status: "pending",
+          template,
+        });
+        await supabaseInsert("agent_activity", {
+          org_id: orgId,
+          agent: "cooper",
+          action_type: "custom_build_request",
+          description: `Custom build requested for ${biz} (${template}). Awaiting manual Lovable build.`,
+          metadata: { template, plan, industry, city, state, services },
+        });
+      }
       return;
     }
 
@@ -271,6 +331,30 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       await notifySlack(`✅ *${biz}* website deployed!\n🌐 ${deployedUrl}\n📦 Template: ${template}\n💰 Plan: ${plan}`);
     }
 
+    // ── Step 7: Write to Supabase (site_deployments + agent_activity) ──
+    const orgId = await getOrgId(userId);
+    if (orgId) {
+      await supabaseInsert("site_deployments", {
+        org_id: orgId,
+        user_id: userId,
+        site_url: deployedUrl !== "unknown" ? deployedUrl : null,
+        repo_name: `site-${biz.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "")}`,
+        status: deployedUrl !== "unknown" ? "live" : "failed",
+        template,
+        deployed_at: new Date().toISOString(),
+      });
+      console.log("  ✅ Written to site_deployments");
+
+      await supabaseInsert("agent_activity", {
+        org_id: orgId,
+        agent: "bob",
+        action_type: "site_deploy",
+        description: `Website deployed to ${deployedUrl !== "unknown" ? deployedUrl : "unknown"} (${template} template)`,
+        metadata: { template, plan, deployedUrl, userId },
+      });
+      console.log("  ✅ Written to agent_activity");
+    }
+
     console.log(`\n${"=".repeat(60)}`);
     console.log(`🎉 PIPELINE COMPLETE — ${deployedUrl}`);
     console.log(`${"=".repeat(60)}\n`);
@@ -282,6 +366,30 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
     
     // Notify slack about failure
     await notifySlack(`🔴 *Deploy pipeline failed*\nError: ${err.message}\nCheck Render logs.`).catch(() => {});
+
+    // Log failure to Supabase
+    try {
+      const rawBody2 = JSON.stringify({ userId: "unknown" });
+      // Try to extract userId from the error context
+      const failUserId = (err as any)._userId;
+      if (failUserId) {
+        const failOrgId = await getOrgId(failUserId);
+        if (failOrgId) {
+          await supabaseInsert("site_deployments", {
+            org_id: failOrgId,
+            user_id: failUserId,
+            status: "failed",
+            error_message: err.message?.slice(0, 500),
+          });
+          await supabaseInsert("agent_activity", {
+            org_id: failOrgId,
+            agent: "bob",
+            action_type: "deploy_failed",
+            description: `Deploy pipeline failed: ${err.message?.slice(0, 200)}`,
+          });
+        }
+      }
+    } catch { /* don't let logging failure mask the real error */ }
   }
 });
 
