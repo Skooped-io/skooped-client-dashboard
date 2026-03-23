@@ -555,16 +555,19 @@ function fixHardcodedLogo(filePath: string): void {
   let content = readFileSync(filePath, "utf-8");
   const original = content;
 
-  // Match spans with brand/logo/font-bold/text-xl/text-2xl/text-3xl class names
-  // whose text content is a hardcoded string (not already a JSX expression)
+  // Pattern 1: "TEXT<span ...>TEXT</span>" logo pattern (e.g., APEX<span>ROOFING</span>)
+  // Replace the entire logo block with {seoConfig.businessName}
+  const splitLogoRe = /([A-Z]{2,})<span\b[^>]*>([A-Z]{2,})<\/span>/g;
+  content = content.replace(splitLogoRe, "{seoConfig.businessName}");
+
+  // Pattern 2: Standalone spans with brand styling containing hardcoded text
   const brandSpanRe =
     /(<span\b[^>]*className\s*=\s*(?:"[^"]*(?:font-bold|text-xl|text-2xl|text-3xl|logo|brand)[^"]*"|`[^`]*(?:font-bold|text-xl|text-2xl|text-3xl|logo|brand)[^`]*`)[^>]*>)([^{<][^<]*)(<\/span>)/g;
 
   content = content.replace(brandSpanRe, (match, open, text, close) => {
     const trimmed = text.trim();
-    // Only replace if it looks like a proper business name (starts with uppercase, 2+ chars)
     if (trimmed.length >= 2 && /^[A-Z]/.test(trimmed)) {
-      return `${open}{siteConfig.businessName}${close}`;
+      return `${open}{seoConfig.businessName}${close}`;
     }
     return match;
   });
@@ -576,7 +579,7 @@ function fixHardcodedLogo(filePath: string): void {
     // Insert after the last existing import line
     content = content.replace(
       /(^(?:import\s[\s\S]*?from\s+['"][^'"]+['"];?\s*\n)+)/m,
-      `$1import siteConfig from "../../siteConfig.json";\n`
+      `$1import { seoConfig } from "@/lib/config";\n`
     );
   }
 
@@ -668,7 +671,8 @@ async function main() {
   // ── Step 3: Build slug ──────────────────────────────────────────────────────
   const ownerName = siteConfig.ownerName as string;
   const slugSource = businessName || ownerName || userEmail.split("@")[0];
-  const slug = slugify(slugSource);
+  const slugIdx = process.argv.indexOf("--slug");
+  const slug = (slugIdx !== -1 && process.argv[slugIdx + 1]) ? process.argv[slugIdx + 1] : slugify(slugSource);
   if (!slug) {
     throw new Error(
       "Could not derive a slug from business name, owner name, or email."
@@ -721,14 +725,19 @@ async function main() {
       JSON.stringify(siteConfig, null, 2) + "\n",
       "utf-8"
     );
-    console.log("\n✅ siteConfig.json injected");
+    // Verify injection
+    const verifyConfig = JSON.parse(readFileSync(siteConfigPath, "utf-8"));
+    if (verifyConfig.businessName !== businessName) {
+      throw new Error(`Config injection verification failed! Expected "${businessName}", got "${verifyConfig.businessName}"`);
+    }
+    console.log(`\n✅ siteConfig.json injected (verified: "${verifyConfig.businessName}")`);
 
     // ── Step 8.5: Remove old git remote ─────────────────────────────────────
     git("remote remove origin", cloneDir);
     console.log("✅ Removed old origin remote");
 
     // ── Step 9: Create new private GitHub repo ──────────────────────────────
-    const newRepoName = `site-${slug}`;
+    const newRepoName = `client-${slug}`;
     const newRepoFull = `${GITHUB_ORG}/${newRepoName}`;
 
     console.log(`\n⏳ Creating private GitHub repo: ${newRepoFull}...`);
@@ -754,7 +763,27 @@ async function main() {
     git("push", cloneDir);
     console.log("✅ Empty commit pushed");
 
-    // ── Step 10.6: Poll until deployment is READY ────────────────────────────
+    // ── Step 10.6: Trigger deployment via Vercel API (git push alone may not trigger) ─
+    console.log("\n⏳ Triggering Vercel deployment via API...");
+    const triggerRes = await fetch("https://api.vercel.com/v13/deployments", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${VERCEL_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: vercelProjectName,
+        project: projectId,
+        gitSource: { type: "github", org: GITHUB_ORG, repo: newRepoName, ref: "main" },
+      }),
+    });
+    if (triggerRes.ok) {
+      console.log("✅ Vercel deployment triggered via API");
+    } else {
+      console.log("⚠️  API trigger failed, relying on git webhook");
+    }
+
+    // ── Step 10.7: Poll until deployment is READY ────────────────────────────
     await pollDeploymentReady(projectId, VERCEL_TOKEN!);
 
     // ── Step 11: Add custom domain ───────────────────────────────────────────
