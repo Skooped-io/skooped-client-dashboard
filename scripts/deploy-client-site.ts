@@ -663,6 +663,46 @@ function fixIndexHtmlMetaTags(
   console.log("  ✅ Fixed index.html meta tags");
 }
 
+// ─── GA4 Analytics injection ──────────────────────────────────────────────────
+
+/**
+ * Injects Google Analytics 4 (gtag.js) tracking code into index.html.
+ * If no measurement ID is provided, skips injection.
+ */
+function injectGA4(cloneDir: string, measurementId?: string): void {
+  if (!measurementId) {
+    console.log("  ⏭️ No GA4 measurement ID — skipping analytics injection");
+    return;
+  }
+
+  const indexHtmlPath = join(cloneDir, "index.html");
+  if (!existsSync(indexHtmlPath)) return;
+
+  let html = readFileSync(indexHtmlPath, "utf-8");
+
+  // Don't inject if already present
+  if (html.includes("googletagmanager.com/gtag")) {
+    console.log("  ⏭️ GA4 already present in index.html — skipping");
+    return;
+  }
+
+  const gtagSnippet = `
+    <!-- Google Analytics 4 (gtag.js) — Skooped -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=${measurementId}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '${measurementId}');
+    </script>`;
+
+  // Inject right after opening <head> tag
+  html = html.replace(/<head([^>]*)>/i, `<head$1>${gtagSnippet}`);
+
+  writeFileSync(indexHtmlPath, html, "utf-8");
+  console.log(`  ✅ Injected GA4 tracking (${measurementId})`);
+}
+
 // ─── Navbar / Footer logo fixer ───────────────────────────────────────────────
 
 /**
@@ -871,6 +911,11 @@ async function main() {
     console.log("\n⏳ Checking Navbar/Footer for hardcoded logos...");
     fixHardcodedLogo(join(cloneDir, "src", "components", "Navbar.tsx"));
     fixHardcodedLogo(join(cloneDir, "src", "components", "Footer.tsx"));
+
+    // ── Step 7.6: Inject GA4 Analytics ────────────────────────────────────
+    console.log("\n⏳ Checking GA4 analytics...");
+    const ga4Id = (meta.ga4_measurement_id as string) ?? (siteConfig as any).ga4MeasurementId ?? undefined;
+    injectGA4(cloneDir, ga4Id);
 
     // ── Step 8: Inject siteConfig.json ──────────────────────────────────────
     const siteConfigPath = join(cloneDir, "siteConfig.json");
