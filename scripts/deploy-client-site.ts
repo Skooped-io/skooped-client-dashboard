@@ -127,6 +127,7 @@ interface SiteAddress {
   city: string;
   state: string;
   zip: string;
+  full?: string;
 }
 
 interface SiteBranding {
@@ -243,22 +244,25 @@ function generateFaqs(
 function generateTestimonials(
   industry: string,
   city: string
-): Array<{ name: string; text: string; rating: number }> {
+): Array<{ name: string; city: string; quote: string; rating: number }> {
   const ind = industry.toLowerCase();
   return [
     {
       name: "Sarah M.",
-      text: `Outstanding ${ind} work! The team was professional, on time, and the results exceeded our expectations. Highly recommend!`,
+      city,
+      quote: `Outstanding ${ind} work! The team was professional, on time, and the results exceeded our expectations. Highly recommend!`,
       rating: 5,
     },
     {
       name: "James T.",
-      text: `Incredible experience from start to finish. They were courteous, efficient, and did excellent work. Will definitely use again.`,
+      city,
+      quote: `Incredible experience from start to finish. They were courteous, efficient, and did excellent work. Will definitely use again.`,
       rating: 5,
     },
     {
       name: "Linda R.",
-      text: `Best ${ind} company in ${city}. Honest pricing, great communication, and top-quality work. You won't be disappointed.`,
+      city,
+      quote: `Best ${ind} company in ${city}. Honest pricing, great communication, and top-quality work. You won't be disappointed.`,
       rating: 5,
     },
   ];
@@ -274,7 +278,27 @@ function transformConfig(config: SiteConfig): Record<string, unknown> {
   const { businessName, ownerName, industry } = config;
   const city = config.address?.city ?? "";
   const state = config.address?.state ?? "";
+  const street = config.address?.street ?? "";
+  const zip = config.address?.zip ?? "";
   const ind = industry?.toLowerCase() ?? "";
+
+  // ── founderName ────────────────────────────────────────────────────────────
+  const founderName = (config as any).founderName ?? ownerName ?? "";
+
+  // ── aboutExtra ─────────────────────────────────────────────────────────────
+  const aboutExtra = (config as any).aboutExtra ?? "";
+
+  // ── phoneRaw ───────────────────────────────────────────────────────────────
+  const phoneRaw = (config.phone ?? "").replace(/\D/g, "");
+
+  // ── address.full ───────────────────────────────────────────────────────────
+  const address: SiteAddress = {
+    street,
+    city,
+    state,
+    zip,
+    full: [street, city, state, zip].filter(Boolean).join(", "),
+  };
 
   // ── a) services ────────────────────────────────────────────────────────────
   let services: unknown[] = config.services ?? [];
@@ -302,11 +326,10 @@ function transformConfig(config: SiteConfig): Record<string, unknown> {
   let trustItems: unknown = config.trustItems;
   if (!Array.isArray(trustItems) || trustItems.length === 0) {
     trustItems = defaultTrustItems;
-  } else if (
-    typeof (trustItems as unknown[])[0] === "object" &&
-    (trustItems as Array<{ label?: string }>)[0]?.label !== undefined
-  ) {
-    trustItems = (trustItems as Array<{ label: string }>).map((t) => t.label);
+  } else if (typeof (trustItems as unknown[])[0] === "object") {
+    trustItems = (trustItems as Array<{ label?: string; text?: string }>).map(
+      (t) => t.label ?? t.text ?? ""
+    );
   }
 
   // ── c) faqs ────────────────────────────────────────────────────────────────
@@ -324,6 +347,13 @@ function transformConfig(config: SiteConfig): Record<string, unknown> {
   let testimonials: unknown = config.testimonials;
   if (!Array.isArray(testimonials) || testimonials.length === 0) {
     testimonials = generateTestimonials(industry, city);
+  } else {
+    testimonials = (testimonials as Array<Record<string, unknown>>).map((t) => ({
+      name: t.name ?? "",
+      city: t.city ?? city,
+      quote: t.quote ?? t.text ?? "",
+      rating: t.rating ?? 5,
+    }));
   }
 
   // ── e) gallery ─────────────────────────────────────────────────────────────
@@ -331,78 +361,136 @@ function transformConfig(config: SiteConfig): Record<string, unknown> {
   if (!Array.isArray(gallery) || gallery.length === 0) {
     gallery = Array.from({ length: 6 }, (_, i) => ({
       title: `Project ${i + 1}`,
+      location: city,
+      type: industry,
+      desc: `Professional ${ind} work completed in ${city}.`,
       imageSlot: `gallery_${i + 1}`,
+    }));
+  } else {
+    gallery = (gallery as Array<Record<string, unknown>>).map((g, i) => ({
+      title: g.title ?? `Project ${i + 1}`,
+      location: g.location ?? city,
+      type: g.type ?? industry,
+      desc: g.desc ?? g.description ?? `Professional ${ind} work completed in ${city}.`,
+      imageSlot: g.imageSlot ?? `gallery_${i + 1}`,
     }));
   }
 
   // ── f) team ────────────────────────────────────────────────────────────────
+  const makeInitials = (name: string): string =>
+    name
+      .split(/\s+/)
+      .map((w) => w[0]?.toUpperCase() ?? "")
+      .join("");
+
   let team: unknown = config.team;
   if (!Array.isArray(team) || team.length === 0) {
+    const teamName = ownerName || businessName;
     team = [
       {
-        name: ownerName || businessName,
+        name: teamName,
         role: "Owner",
+        initials: makeInitials(teamName),
         imageSlot: "team_1",
       },
     ];
+  } else {
+    team = (team as Array<Record<string, unknown>>).map((m, i) => ({
+      ...m,
+      initials: m.initials ?? makeInitials((m.name as string) ?? ""),
+      imageSlot: m.imageSlot ?? `team_${i + 1}`,
+    }));
   }
 
-  // ── g) missing fields with defaults ───────────────────────────────────────
+  // ── g) process ─────────────────────────────────────────────────────────────
+  const defaultProcess = [
+    { step: 1, title: "Free Consultation", desc: "Contact us to discuss your project needs and get a free estimate." },
+    { step: 2, title: "Planning & Proposal", desc: "We create a detailed plan and transparent proposal for your approval." },
+    { step: 3, title: "Expert Execution", desc: "Our skilled team completes your project on time and within budget." },
+    { step: 4, title: "Final Walkthrough", desc: "We review the completed work with you to ensure your satisfaction." },
+  ];
+  let process: unknown = config.process;
+  if (!Array.isArray(process) || process.length === 0) {
+    process = defaultProcess;
+  } else {
+    process = (process as Array<Record<string, unknown>>).map((p, i) => ({
+      step: p.step ?? i + 1,
+      title: p.title ?? `Step ${p.step ?? i + 1}`,
+      desc: p.desc ?? p.description ?? "",
+    }));
+  }
+
+  // ── h) missing fields with defaults ───────────────────────────────────────
   const tagline =
-    config.tagline ?? `${industry} Services You Can Trust`;
+    (config as any).tagline ?? `${industry} Services You Can Trust`;
 
   const mission =
-    config.mission ??
+    (config as any).mission ??
     `Our mission is to deliver quality ${ind} services to the ${city} area with professionalism and care.`;
 
-  const hours = config.hours ?? {
-    monday: "8:00 AM - 6:00 PM",
-    tuesday: "8:00 AM - 6:00 PM",
-    wednesday: "8:00 AM - 6:00 PM",
-    thursday: "8:00 AM - 6:00 PM",
-    friday: "8:00 AM - 6:00 PM",
-    saturday: "9:00 AM - 4:00 PM",
-    sunday: "Closed",
-  };
+  // Hours MUST be a string
+  let hours: unknown = config.hours;
+  if (!hours || typeof hours === "object") {
+    hours = "Mon-Fri: 7AM-6PM, Sat: 8AM-2PM";
+  }
 
-  const whyChooseUs = config.whyChooseUs ?? [
+  const whyChooseUs = (config as any).whyChooseUs ?? [
     "Experienced & Professional",
     "Licensed & Insured",
     "Customer Satisfaction Guaranteed",
     "Serving the Local Community",
   ];
 
-  const certifications = config.certifications ?? [];
-  const process = config.process ?? [];
-  const serviceOptions = config.serviceOptions ?? [];
+  const certifications = (config as any).certifications ?? [];
+  const serviceOptions = (config as any).serviceOptions ?? [];
   const serviceAreaCities =
-    config.serviceAreaCities ?? (city ? [city] : []);
+    (config as any).serviceAreaCities ?? (city ? [city] : []);
 
-  // ── Auto-generate SEO fields ───────────────────────────────────────────────
-  const seoHomeTitle = `${businessName} | ${industry} in ${city}, ${state}`;
-  const seoHomeDesc = `${businessName} offers professional ${ind} services in ${city}, ${state}. Call us for a free estimate today.`;
-
-  const seo = config.seo ?? {
+  // ── Auto-generate SEO fields (h1 on every page) ───────────────────────────
+  const existingSeo = (config as any).seo ?? {};
+  const seo = {
     home: {
-      title: seoHomeTitle,
-      description: seoHomeDesc,
+      title: existingSeo.home?.title ?? `${businessName} | ${industry} in ${city}, ${state}`,
+      description: existingSeo.home?.description ?? `${businessName} offers professional ${ind} services in ${city}, ${state}. Call us for a free estimate today.`,
+      h1: existingSeo.home?.h1 ?? `${city}'s Trusted ${industry} Experts`,
     },
     about: {
-      title: `About ${businessName} | ${industry} in ${city}, ${state}`,
-      description: `Learn more about ${businessName}, your trusted ${ind} provider in ${city}, ${state}.`,
-    },
-    contact: {
-      title: `Contact ${businessName} | ${industry} in ${city}, ${state}`,
-      description: `Get in touch with ${businessName} for ${ind} services in ${city}, ${state}.`,
+      title: existingSeo.about?.title ?? `About ${businessName} | ${industry} in ${city}, ${state}`,
+      description: existingSeo.about?.description ?? `Learn more about ${businessName}, your trusted ${ind} provider in ${city}, ${state}.`,
+      h1: existingSeo.about?.h1 ?? `About ${businessName}`,
     },
     services: {
-      title: `${industry} Services | ${businessName}`,
-      description: `Explore the full range of ${ind} services offered by ${businessName} in ${city}, ${state}.`,
+      title: existingSeo.services?.title ?? `${industry} Services | ${businessName}`,
+      description: existingSeo.services?.description ?? `Explore the full range of ${ind} services offered by ${businessName} in ${city}, ${state}.`,
+      h1: existingSeo.services?.h1 ?? `Our ${industry} Services`,
+    },
+    gallery: {
+      title: existingSeo.gallery?.title ?? `Project Gallery | ${businessName}`,
+      description: existingSeo.gallery?.description ?? `Browse our gallery of completed ${ind} projects in ${city}, ${state}.`,
+      h1: existingSeo.gallery?.h1 ?? `Our Work`,
+    },
+    faq: {
+      title: existingSeo.faq?.title ?? `FAQ | ${businessName}`,
+      description: existingSeo.faq?.description ?? `Frequently asked questions about our ${ind} services in ${city}, ${state}.`,
+      h1: existingSeo.faq?.h1 ?? `Frequently Asked Questions`,
+    },
+    contact: {
+      title: existingSeo.contact?.title ?? `Contact ${businessName} | ${industry} in ${city}, ${state}`,
+      description: existingSeo.contact?.description ?? `Get in touch with ${businessName} for ${ind} services in ${city}, ${state}.`,
+      h1: existingSeo.contact?.h1 ?? `Contact Us`,
     },
   };
 
+  // ── Build final output — exclude branding and template keys ───────────────
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { branding: _branding, template: _template, ...rest } = config as any;
+
   return {
-    ...config,
+    ...rest,
+    address,
+    founderName,
+    phoneRaw,
+    aboutExtra,
     services,
     trustItems,
     faqs,
