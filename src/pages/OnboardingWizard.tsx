@@ -572,10 +572,14 @@ export default function OnboardingWizard() {
         plan: data.plan,
         google_business_id: data.selectedGoogleBusiness || null,
       });
-      await saveSiteConfig(user.id, siteConfig).catch((err) => {
+      try {
+        await saveSiteConfig(user.id, siteConfig);
+        console.log("[Onboarding] siteConfig saved OK");
+      } catch (err) {
         console.error("[Onboarding] Failed to save site config:", err);
         toast.error("Failed to save site configuration. Please try again.");
-      });
+        return; // Block checkout — no siteConfig = no deploy
+      }
 
       // Refresh the session so ProtectedRoute reads the updated user_metadata
       await supabase.auth.refreshSession();
