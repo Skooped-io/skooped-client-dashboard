@@ -19,8 +19,8 @@ import { execSync } from "child_process";
 import { mkdtempSync, writeFileSync, rmSync, existsSync, readFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { createProject, addDomain, getDeploymentStatus } from "../src/lib/vercelDeploy.js";
-import { slugify } from "../src/lib/slugify.js";
+import { createProject, addDomain, getDeploymentStatus } from "../src/lib/vercelDeploy.ts";
+import { slugify } from "../src/lib/slugify.ts";
 
 // ─── Environment ──────────────────────────────────────────────────────────────
 
