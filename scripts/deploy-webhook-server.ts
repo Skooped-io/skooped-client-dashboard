@@ -48,8 +48,44 @@ async function fetchUser(userId: string) {
       Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
     },
   });
-  if (!res.ok) throw new Error(`Supabase fetch failed: ${res.status}`);
+  if (!res.ok) throw new Error(`Supabase fetchUser failed: ${res.status}`);
   return res.json();
+}
+
+/**
+ * Fetch business profile from the portal's business_profiles table.
+ * The portal onboarding writes here (not user_metadata).
+ */
+async function fetchBusinessProfile(userId: string) {
+  // First get the org_id for this user
+  const orgRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/organization_members?user_id=eq.${userId}&select=org_id&limit=1`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY!,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    }
+  );
+  if (!orgRes.ok) throw new Error(`Supabase org lookup failed: ${orgRes.status}`);
+  const orgRows = await orgRes.json();
+  if (!orgRows.length) return null;
+
+  const orgId = orgRows[0].org_id;
+
+  // Then fetch the business profile for that org
+  const bpRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/business_profiles?org_id=eq.${orgId}&select=*&limit=1`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY!,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    }
+  );
+  if (!bpRes.ok) throw new Error(`Supabase business_profiles fetch failed: ${bpRes.status}`);
+  const bpRows = await bpRes.json();
+  return bpRows.length ? bpRows[0] : null;
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
@@ -136,17 +172,30 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
     res.writeHead(202, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ accepted: true, message: "Pipeline started" }));
 
-    // ── Step 1: Fetch user ────────────────────────────────────────
-    console.log("⏳ Step 1: Fetching user...");
+    // ── Step 1: Fetch user + business profile ──────────────────────
+    console.log("⏳ Step 1: Fetching user + business profile...");
     const user = await fetchUser(userId);
     const email = user.email;
-    const meta = user.user_metadata;
-    const name = meta.owner_name || meta.full_name || "there";
-    const biz = meta.business_name || "your business";
-    const template = meta.template || "N/A";
-    const plan = meta.plan || "N/A";
-    const industry = meta.industry || "N/A";
-    console.log(`✅ User: ${email} | Business: ${biz} | Template: ${template}`);
+    const meta = user.user_metadata ?? {};
+
+    // Portal writes to business_profiles table; old dashboard wrote to user_metadata.
+    // Try business_profiles first (portal), fall back to user_metadata (legacy).
+    const bp = await fetchBusinessProfile(userId).catch((err: Error) => {
+      console.warn("⚠️ business_profiles lookup failed, falling back to user_metadata:", err.message);
+      return null;
+    });
+
+    const name = bp?.owner_name || bp?.business_name || meta.owner_name || meta.full_name || "there";
+    const biz = bp?.business_name || meta.business_name || "your business";
+    const template = bp?.template || meta.template || "N/A";
+    const plan = meta.plan || "N/A"; // plan comes from Stripe metadata, not business_profiles
+    const industry = bp?.industry || meta.industry || "N/A";
+    const city = bp?.city || meta.city || "";
+    const state = bp?.state || meta.state || "";
+    const services = bp?.services || meta.services || [];
+    const phone = bp?.phone || meta.phone || "";
+    const description = bp?.description || meta.about_text || "";
+    console.log(`✅ User: ${email} | Business: ${biz} | Template: ${template} | Source: ${bp ? "business_profiles" : "user_metadata"}`);
 
     // ── Step 2: Send welcome email ────────────────────────────────
     console.log("\n⏳ Step 2: Sending welcome email...");

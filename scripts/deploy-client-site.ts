@@ -85,6 +85,42 @@ async function fetchUser(userId: string): Promise<UserRecord> {
   return res.json() as Promise<UserRecord>;
 }
 
+/**
+ * Fetch business profile from the portal's business_profiles table.
+ * Portal onboarding writes here; deploy script needs to read from here.
+ */
+async function fetchBusinessProfile(userId: string): Promise<Record<string, unknown> | null> {
+  // Get org_id for this user
+  const orgRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/organization_members?user_id=eq.${userId}&select=org_id&limit=1`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY!,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    }
+  );
+  if (!orgRes.ok) return null;
+  const orgRows = (await orgRes.json()) as Array<{ org_id: string }>;
+  if (!orgRows.length) return null;
+
+  const orgId = orgRows[0].org_id;
+
+  // Fetch the business profile
+  const bpRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/business_profiles?org_id=eq.${orgId}&select=*&limit=1`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY!,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    }
+  );
+  if (!bpRes.ok) return null;
+  const bpRows = (await bpRes.json()) as Array<Record<string, unknown>>;
+  return bpRows.length ? bpRows[0] : null;
+}
+
 async function updateUserMetadata(
   userId: string,
   patch: Record<string, unknown>
@@ -723,8 +759,41 @@ async function main() {
   // ── Step 1: Fetch user + build siteConfig ───────────────────────────────────
   console.log("⏳ Fetching user from Supabase...");
   const user = await fetchUser(userId);
-  const meta = user.user_metadata;
   const userEmail = user.email ?? "";
+
+  // Portal writes to business_profiles table; old dashboard wrote to user_metadata.
+  // Try business_profiles first, fall back to user_metadata for legacy compatibility.
+  const bp = await fetchBusinessProfile(userId);
+  let meta: Record<string, unknown>;
+
+  if (bp && bp.business_name) {
+    console.log("📋 Using business_profiles table (portal data)");
+    // Map business_profiles columns → the shape buildSiteConfig expects
+    meta = {
+      business_name: bp.business_name,
+      owner_name: bp.owner_name ?? bp.business_name,
+      phone: bp.phone ?? "",
+      email: bp.email ?? userEmail,
+      city: bp.city ?? "",
+      state: bp.state ?? "",
+      industry: bp.industry ?? "",
+      services: bp.services ?? [],
+      about_text: bp.description ?? "",
+      template: bp.template ?? "",
+      service_area: Array.isArray(bp.service_areas)
+        ? (bp.service_areas as string[]).join(", ")
+        : (bp.service_area as string) ?? "",
+      // Preserve any user_metadata fields not in business_profiles
+      ...Object.fromEntries(
+        Object.entries(user.user_metadata ?? {}).filter(
+          ([k]) => !["business_name", "owner_name", "phone", "email", "city", "state", "industry", "services", "about_text", "template", "service_area"].includes(k)
+        )
+      ),
+    };
+  } else {
+    console.log("📋 Using user_metadata (legacy/fallback)");
+    meta = user.user_metadata;
+  }
 
   const rawConfig = buildSiteConfig(meta, userEmail);
   const siteConfig = transformConfig(rawConfig) as Record<string, unknown> & {
