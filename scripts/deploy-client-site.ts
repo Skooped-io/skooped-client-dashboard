@@ -732,7 +732,12 @@ async function main() {
     }
     console.log(`\n✅ siteConfig.json injected (verified: "${verifyConfig.businessName}")`);
 
-    // ── Step 8.5: Remove old git remote ─────────────────────────────────────
+    // ── Step 8.5: Commit all changes to git ────────────────────────────────
+    git("add -A", cloneDir);
+    git('commit -m "feat: inject client config + strip GH Pages artifacts"', cloneDir);
+    console.log("✅ All changes committed to git");
+
+    // ── Step 8.6: Remove old git remote ─────────────────────────────────────
     git("remote remove origin", cloneDir);
     console.log("✅ Removed old origin remote");
 
