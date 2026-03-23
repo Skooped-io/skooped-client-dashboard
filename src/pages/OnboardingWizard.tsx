@@ -344,8 +344,15 @@ export default function OnboardingWizard() {
         return;
     }
 
-    supabase.auth.updateUser({ data: stepPayload }).catch((err) => {
-      console.error("Failed to auto-save step data:", err);
+    console.log(`[Onboarding] Saving step ${currentStep}:`, stepPayload);
+    supabase.auth.updateUser({ data: stepPayload }).then(({ data: result, error }) => {
+      if (error) {
+        console.error(`[Onboarding] Step ${currentStep} save FAILED:`, error.message);
+      } else {
+        console.log(`[Onboarding] Step ${currentStep} saved OK`);
+      }
+    }).catch((err) => {
+      console.error(`[Onboarding] Step ${currentStep} save EXCEPTION:`, err);
     });
   }, [user]);
 
