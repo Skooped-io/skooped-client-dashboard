@@ -12,7 +12,7 @@
  *   VERCEL_TOKEN         — Vercel personal access token
  *   SUPABASE_URL         — https://ordxzakffddgytanahnc.supabase.co
  *   SUPABASE_SERVICE_KEY — Supabase service role key
- *   GITHUB_TOKEN         — GitHub PAT (or rely on `gh` CLI auth)
+ *   GITHUB_TOKEN         — GitHub PAT with repo creation permissions
  */
 
 import { execSync } from "child_process";
@@ -28,6 +28,7 @@ const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const SUPABASE_URL =
   process.env.SUPABASE_URL ?? "https://ordxzakffddgytanahnc.supabase.co";
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_ORG = "Skooped-io";
 
 if (!VERCEL_TOKEN) {
@@ -36,6 +37,10 @@ if (!VERCEL_TOKEN) {
 }
 if (!SUPABASE_SERVICE_KEY) {
   console.error("❌  SUPABASE_SERVICE_KEY env var is required.");
+  process.exit(1);
+}
+if (!GITHUB_TOKEN) {
+  console.error("❌  GITHUB_TOKEN env var is required.");
   process.exit(1);
 }
 
@@ -103,14 +108,6 @@ async function updateUserMetadata(
 }
 
 // ─── GitHub helpers ───────────────────────────────────────────────────────────
-
-function gh(args: string, cwd?: string): string {
-  return execSync(`gh ${args}`, {
-    cwd,
-    encoding: "utf-8",
-    stdio: ["pipe", "pipe", "pipe"],
-  }).trim();
-}
 
 function git(args: string, cwd: string): string {
   return execSync(`git ${args}`, {
@@ -784,7 +781,7 @@ async function main() {
 
   try {
     console.log(`\n⏳ Cloning ${templateRepoFull}...`);
-    gh(`repo clone ${templateRepoFull} ${cloneDir}`);
+    git(`clone https://${GITHUB_TOKEN}@github.com/${templateRepoFull}.git ${cloneDir}`, tmpDir);
     console.log("✅ Cloned template");
 
     // ── Step 6: Remove GitHub Actions workflows ─────────────────────────────
@@ -834,7 +831,20 @@ async function main() {
     const newRepoFull = `${GITHUB_ORG}/${newRepoName}`;
 
     console.log(`\n⏳ Creating private GitHub repo: ${newRepoFull}...`);
-    gh(`repo create ${newRepoFull} --private --source ${cloneDir} --push`);
+    const createRepoRes = await fetch(`https://api.github.com/orgs/${GITHUB_ORG}/repos`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: newRepoName, private: true }),
+    });
+    if (!createRepoRes.ok) {
+      const body = await createRepoRes.text();
+      throw new Error(`GitHub repo creation failed (${createRepoRes.status}): ${body}`);
+    }
+    git(`remote add origin https://${GITHUB_TOKEN}@github.com/${newRepoFull}.git`, cloneDir);
+    git("push -u origin main", cloneDir);
     console.log(`✅ Repo created: ${newRepoFull}`);
 
     // ── Step 10: Create Vercel project ───────────────────────────────────────
