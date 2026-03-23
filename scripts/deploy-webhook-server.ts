@@ -1,26 +1,36 @@
 /**
- * Local webhook server for n8n to trigger the deploy pipeline.
- * Runs on the host machine (not inside Docker) so it has access to gh CLI.
+ * Skooped Deploy Server — Full Onboarding Pipeline
+ * 
+ * Handles the complete post-checkout flow:
+ * 1. Fetch user from Supabase
+ * 2. Send welcome email via Resend
+ * 3. Notify Slack #coopers-hub
+ * 4. Run deploy pipeline (clone template, inject config, deploy to Vercel)
+ * 5. Send "site is live" email
+ * 6. Notify Slack with deployed URL
  *
- * Usage:
- *   VERCEL_TOKEN=... SUPABASE_SERVICE_KEY=... npx tsx scripts/deploy-webhook-server.ts
- *
- * n8n calls: POST http://host.docker.internal:3456/deploy { "userId": "..." }
+ * Runs on Render: https://skooped-deploy.onrender.com
+ * Dashboard calls: POST /deploy { "userId": "..." }
  */
 
 import { createServer, IncomingMessage, ServerResponse } from "http";
 import { execSync } from "child_process";
 
 const PORT = parseInt(process.env.PORT ?? "3456", 10);
-
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "https://ordxzakffddgytanahnc.supabase.co";
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const SLACK_CHANNEL = "C0ALGCT1E4B";
 
 if (!VERCEL_TOKEN || !SUPABASE_SERVICE_KEY) {
   console.error("❌ VERCEL_TOKEN and SUPABASE_SERVICE_KEY env vars required");
   process.exit(1);
 }
+
+// ── Helpers ─────────────────────────────────────────────────────────
 
 function parseBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve) => {
@@ -30,7 +40,59 @@ function parseBody(req: IncomingMessage): Promise<string> {
   });
 }
 
+async function fetchUser(userId: string) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+    headers: {
+      apikey: SUPABASE_SERVICE_KEY!,
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+    },
+  });
+  if (!res.ok) throw new Error(`Supabase fetch failed: ${res.status}`);
+  return res.json();
+}
+
+async function sendEmail(to: string, subject: string, html: string) {
+  if (!RESEND_API_KEY) { console.log("⚠️ RESEND_API_KEY not set, skipping email"); return; }
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Skooped <noreply@skooped.io>",
+      to: [to],
+      subject,
+      html,
+    }),
+  });
+  const data = await res.json();
+  console.log(`📧 Email sent: ${subject} → ${to} (${(data as any).id ?? "ok"})`);
+}
+
+async function notifySlack(text: string) {
+  if (!SLACK_BOT_TOKEN) { console.log("⚠️ SLACK_BOT_TOKEN not set, skipping slack"); return; }
+  await fetch("https://slack.com/api/chat.postMessage", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${SLACK_BOT_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ channel: SLACK_CHANNEL, text }),
+  });
+  console.log(`💬 Slack notified`);
+}
+
+// ── Server ──────────────────────────────────────────────────────────
+
 const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
+  // Health check
+  if (req.method === "GET" && req.url === "/health") {
+    res.writeHead(200);
+    res.end(JSON.stringify({ status: "ok", service: "skooped-deploy" }));
+    return;
+  }
+
   if (req.method !== "POST" || req.url !== "/deploy") {
     res.writeHead(404);
     res.end(JSON.stringify({ error: "Not found" }));
@@ -47,35 +109,116 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
       return;
     }
 
-    console.log(`\n🚀 Deploy triggered for userId: ${userId}`);
+    console.log(`\n${"=".repeat(60)}`);
+    console.log(`🚀 FULL PIPELINE — userId: ${userId}`);
+    console.log(`${"=".repeat(60)}\n`);
 
-    // Run the deploy script
+    // Respond immediately so dashboard doesn't hang
+    res.writeHead(202, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ accepted: true, message: "Pipeline started" }));
+
+    // ── Step 1: Fetch user ────────────────────────────────────────
+    console.log("⏳ Step 1: Fetching user...");
+    const user = await fetchUser(userId);
+    const email = user.email;
+    const meta = user.user_metadata;
+    const name = meta.owner_name || meta.full_name || "there";
+    const biz = meta.business_name || "your business";
+    const template = meta.template || "N/A";
+    const plan = meta.plan || "N/A";
+    const industry = meta.industry || "N/A";
+    console.log(`✅ User: ${email} | Business: ${biz} | Template: ${template}`);
+
+    // ── Step 2: Send welcome email ────────────────────────────────
+    console.log("\n⏳ Step 2: Sending welcome email...");
+    await sendEmail(
+      email,
+      "Welcome to Skooped! Your AI team is on it 🚀",
+      `<div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+        <h1 style="color:#361C24">Welcome to Skooped!</h1>
+        <p>Hey ${name},</p>
+        <p>Your AI marketing team is already getting to work. Your website is being built right now and will be live in under 60 seconds.</p>
+        <p><b>What's happening:</b></p>
+        <ul>
+          <li>✅ Your website is being built</li>
+          <li>✅ SEO optimization starting</li>
+          <li>✅ Your dashboard is ready</li>
+        </ul>
+        <p>Check your dashboard: <a href="https://app.skooped.io">app.skooped.io</a></p>
+        <p>— Cooper & the Skooped team</p>
+      </div>`
+    );
+
+    // ── Step 3: Notify Slack ──────────────────────────────────────
+    console.log("\n⏳ Step 3: Notifying Slack...");
+    await notifySlack(
+      `🎉 *New client signup!*\n\nBusiness: *${biz}*\nIndustry: ${industry}\nPlan: ${plan}\nEmail: ${email}\nTemplate: ${template}\n\nDeploy pipeline firing now...`
+    );
+
+    // ── Step 4: Run deploy pipeline ───────────────────────────────
+    if (template === "custom" || template === "concierge") {
+      console.log(`\nℹ️ Template is '${template}' — skipping auto-deploy. Manual build required.`);
+      await notifySlack(`ℹ️ *${biz}* selected ${template} build — manual action needed.`);
+      return;
+    }
+
+    console.log("\n⏳ Step 4: Running deploy pipeline...");
     const scriptPath = new URL("./deploy-client-site.ts", import.meta.url).pathname;
-    const cmd = `VERCEL_TOKEN="${VERCEL_TOKEN}" SUPABASE_SERVICE_KEY="${SUPABASE_SERVICE_KEY}" SUPABASE_URL="${SUPABASE_URL}" npx tsx "${scriptPath}" --userId ${userId}`;
+    const envVars = [
+      `VERCEL_TOKEN="${VERCEL_TOKEN}"`,
+      `SUPABASE_SERVICE_KEY="${SUPABASE_SERVICE_KEY}"`,
+      `SUPABASE_URL="${SUPABASE_URL}"`,
+      `GITHUB_TOKEN="${GITHUB_TOKEN}"`,
+    ].join(" ");
 
-    const output = execSync(cmd, {
-      encoding: "utf-8",
-      timeout: 300_000, // 5 min
-      cwd: new URL("..", import.meta.url).pathname,
-    });
-
+    const output = execSync(
+      `${envVars} npx tsx "${scriptPath}" --userId ${userId}`,
+      { encoding: "utf-8", timeout: 300_000, cwd: new URL("..", import.meta.url).pathname }
+    );
     console.log(output);
 
-    // Extract deployed URL from output
+    // Extract deployed URL
     const urlMatch = output.match(/URL:\s*(https:\/\/[^\s]+)/);
     const deployedUrl = urlMatch?.[1] ?? "unknown";
 
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ success: true, url: deployedUrl, output }));
+    // ── Step 5: Send "site is live" email ─────────────────────────
+    if (deployedUrl !== "unknown") {
+      console.log("\n⏳ Step 5: Sending 'site is live' email...");
+      await sendEmail(
+        email,
+        "Your website is LIVE! 🎉",
+        `<div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+          <h1 style="color:#361C24">Your website is live! 🎉</h1>
+          <p>Hey ${name},</p>
+          <p>Your new website has been deployed and is ready for the world to see.</p>
+          <p><a href="${deployedUrl}" style="display:inline-block;padding:12px 24px;background:#361C24;color:white;text-decoration:none;border-radius:8px;font-weight:bold">View Your Website →</a></p>
+          <p>URL: <a href="${deployedUrl}">${deployedUrl}</a></p>
+          <p>Your AI team is now working on SEO optimization and marketing. You'll start seeing results within 30-60 days.</p>
+          <p>Check your dashboard anytime: <a href="https://app.skooped.io">app.skooped.io</a></p>
+          <p>— Cooper & the Skooped team</p>
+        </div>`
+      );
+
+      // ── Step 6: Slack — site is live ──────────────────────────────
+      await notifySlack(`✅ *${biz}* website deployed!\n🌐 ${deployedUrl}\n📦 Template: ${template}\n💰 Plan: ${plan}`);
+    }
+
+    console.log(`\n${"=".repeat(60)}`);
+    console.log(`🎉 PIPELINE COMPLETE — ${deployedUrl}`);
+    console.log(`${"=".repeat(60)}\n`);
+
   } catch (err: any) {
-    console.error(`❌ Deploy failed:`, err.message);
-    res.writeHead(500);
-    res.end(JSON.stringify({ error: err.message, stdout: err.stdout, stderr: err.stderr }));
+    console.error(`\n❌ Pipeline failed:`, err.message);
+    if (err.stdout) console.error("stdout:", err.stdout);
+    if (err.stderr) console.error("stderr:", err.stderr);
+    
+    // Notify slack about failure
+    await notifySlack(`🔴 *Deploy pipeline failed*\nError: ${err.message}\nCheck Render logs.`).catch(() => {});
   }
 });
 
 server.listen(PORT, () => {
-  console.log(`\n🔧 Deploy webhook server running on http://localhost:${PORT}/deploy`);
-  console.log(`   n8n should call: POST http://host.docker.internal:${PORT}/deploy`);
-  console.log(`   Body: { "userId": "..." }\n`);
+  console.log(`\n🔧 Skooped Deploy Server running on port ${PORT}`);
+  console.log(`   POST /deploy { "userId": "..." }`);
+  console.log(`   GET  /health\n`);
 });
