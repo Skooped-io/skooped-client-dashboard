@@ -42,6 +42,16 @@ export default function Dashboard() {
       toast("Your website is being built! You'll get an email when it's live (usually under 60 seconds).", {
         duration: 8000,
       });
+
+      // Trigger deploy pipeline
+      if (user?.id) {
+        fetch("https://skooped-deploy.onrender.com/deploy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id }),
+        }).catch(console.error);
+      }
+
       window.history.replaceState({}, "", window.location.pathname);
     } else if (checkout === "cancelled") {
       toast("No worries! You can start your trial anytime from Settings.", { duration: 5000 });
