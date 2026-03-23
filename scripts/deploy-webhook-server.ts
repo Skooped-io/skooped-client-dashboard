@@ -23,6 +23,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL ?? "https://ordxzakffddgytanahnc.s
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const DEPLOY_SERVER_SECRET = process.env.DEPLOY_SERVER_SECRET;
 const SLACK_CHANNEL = "C0ALGCT1E4B";
 
 if (!VERCEL_TOKEN || !SUPABASE_SERVICE_KEY) {
@@ -93,10 +94,28 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
     return;
   }
 
+  // Stripe webhook endpoint (Option B: portal calls Render directly)
+  if (req.method === "POST" && req.url === "/stripe-webhook") {
+    // Redirect to /deploy — same logic, just a convenience alias
+    req.url = "/deploy";
+  }
+
   if (req.method !== "POST" || req.url !== "/deploy") {
     res.writeHead(404);
     res.end(JSON.stringify({ error: "Not found" }));
     return;
+  }
+
+  // ── Auth check ──────────────────────────────────────────────────
+  if (DEPLOY_SERVER_SECRET) {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (token !== DEPLOY_SERVER_SECRET) {
+      console.error("🔒 Unauthorized deploy request");
+      res.writeHead(401);
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
   }
 
   try {
