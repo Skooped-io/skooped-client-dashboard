@@ -227,7 +227,7 @@ const slideVariants = {
 
 export default function OnboardingWizard() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [data, setData] = useState<OnboardingData>(() => ({
@@ -305,7 +305,10 @@ export default function OnboardingWizard() {
 
   // Save the current step's data to user_metadata silently (non-blocking).
   const saveStepData = useCallback((currentStep: number, currentData: OnboardingData) => {
-    if (!user) return;
+    if (!user) {
+      console.error("[Onboarding] saveStepData called but user is null — skipping save for step", currentStep);
+      return;
+    }
 
     let stepPayload: Record<string, unknown> = {};
     switch (currentStep) {
@@ -504,13 +507,32 @@ export default function OnboardingWizard() {
     localStorage.setItem("skooped_onboarding", JSON.stringify(data));
     if (user) {
       const selectedBiz = googleBusinesses.find((b) => b.id === data.selectedGoogleBusiness);
+
+      // Belt-and-suspenders: always save ALL onboarding data in one shot before redirecting,
+      // regardless of whether the progressive per-step saves succeeded.
+      console.log("[Onboarding] finish() — saving all data to Supabase now...");
       const { error } = await supabase.auth.updateUser({
         data: {
           onboarding_complete: true,
-          business_name: data.businessName,
+          template: data.template,
           industry: data.industry,
-          services: data.services,
           plan: data.plan,
+          business_name: data.businessName,
+          owner_name: data.ownerName,
+          phone: data.phone,
+          street: data.street,
+          city: data.city,
+          state: data.state,
+          zip: data.zip,
+          service_area: data.serviceArea,
+          year_established: data.yearEstablished,
+          license_number: data.licenseNumber,
+          services: data.services,
+          about_text: data.aboutText,
+          primary_color: data.primaryColor,
+          secondary_color: data.secondaryColor,
+          font_style: data.fontStyle,
+          logo_url: data.logo,
           ...(data.selectedGoogleBusiness
             ? {
                 google_business_id: data.selectedGoogleBusiness,
@@ -520,8 +542,11 @@ export default function OnboardingWizard() {
         },
       });
       if (error) {
-        console.error("Failed to save onboarding data:", error.message);
+        console.error("[Onboarding] finish() — full save FAILED:", error.message);
+        toast.error("Failed to save your business info. Please try again.");
+        return;
       }
+      console.log("[Onboarding] finish() — full save OK");
 
       // Build and persist the canonical site config for the deployment pipeline.
       const siteConfig = buildSiteConfig({
@@ -548,7 +573,8 @@ export default function OnboardingWizard() {
         google_business_id: data.selectedGoogleBusiness || null,
       });
       await saveSiteConfig(user.id, siteConfig).catch((err) => {
-        console.error("Failed to save site config:", err);
+        console.error("[Onboarding] Failed to save site config:", err);
+        toast.error("Failed to save site configuration. Please try again.");
       });
 
       // Refresh the session so ProtectedRoute reads the updated user_metadata
@@ -1119,6 +1145,16 @@ export default function OnboardingWizard() {
   const isFirstStep = step === 0;
   const isLastStep = step === TOTAL_STEPS - 1;
   const isGoogleStep = step === 5;
+
+  // Don't render the wizard until the auth session is confirmed — prevents saveStepData
+  // from being captured with a null user and silently dropping all progressive saves.
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-background-light flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background-light flex flex-col">
